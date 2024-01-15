@@ -85,7 +85,7 @@
   - 관리자 계정에 한에서 삭제된 게시글, 댓글을 검색, 확인할 수 있습니다.
 
 # ERD
-![MyMusicList](https://github.com/itpark1018/MyMusicList/assets/117416583/72b6feed-dad6-45dd-b62c-6252856bd4db)
+![MyMusicList](https://github.com/itpark1018/MyMusicList/assets/117416583/b2ab6c4e-1e01-4b90-a655-bac2f12fdbf4)
 
 # 기술스택
 - SpringBoot
