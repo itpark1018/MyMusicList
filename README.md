@@ -95,3 +95,4 @@
 - JAVA
 - JPA
 - Spring Security
+- Redis
