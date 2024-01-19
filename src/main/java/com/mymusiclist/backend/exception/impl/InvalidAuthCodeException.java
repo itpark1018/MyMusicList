@@ -1,0 +1,17 @@
+package com.mymusiclist.backend.exception.impl;
+
+import com.mymusiclist.backend.exception.AbstractException;
+import org.springframework.http.HttpStatus;
+
+public class InvalidAuthCodeException extends AbstractException {
+
+  @Override
+  public int getStatusCode() {
+    return HttpStatus.BAD_REQUEST.value();
+  }
+
+  @Override
+  public String getMessage() {
+    return "유효하지 않는 인증 코드입니다.";
+  }
+}
