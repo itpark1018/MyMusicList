@@ -256,7 +256,10 @@ public class MemberServiceImpl implements MemberService {
   @Transactional
   public MemberDto update(UpdateRequest updateRequest) {
 
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(updateRequest.getEmail());
+    // AccessToken에서 email을 가져와서 회원 조회
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    String email = authentication.getName();
+    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
     if (byEmail.isEmpty()) {
       throw new NotFoundMemberException();
     }

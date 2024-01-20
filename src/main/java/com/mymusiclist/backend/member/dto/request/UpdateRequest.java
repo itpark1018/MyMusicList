@@ -13,7 +13,6 @@ import lombok.Setter;
 @Builder
 public class UpdateRequest {
 
-  private String email;
   private String nickname;
   private String imageUrl;
   private String introduction;
