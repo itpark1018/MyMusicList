@@ -10,12 +10,14 @@ import com.mymusiclist.backend.exception.impl.InvalidPasswordException;
 import com.mymusiclist.backend.exception.impl.InvalidTokenException;
 import com.mymusiclist.backend.exception.impl.NotFoundMemberException;
 import com.mymusiclist.backend.exception.impl.SuspendedMemberException;
+import com.mymusiclist.backend.exception.impl.WaitingMemberException;
 import com.mymusiclist.backend.member.domain.MemberEntity;
 import com.mymusiclist.backend.member.dto.MemberDto;
 import com.mymusiclist.backend.member.dto.request.LoginRequest;
 import com.mymusiclist.backend.member.dto.request.ResetRequest;
 import com.mymusiclist.backend.member.dto.request.SignUpRequest;
 import com.mymusiclist.backend.member.dto.request.TokenRequest;
+import com.mymusiclist.backend.member.dto.request.UpdateRequest;
 import com.mymusiclist.backend.member.jwt.JwtTokenProvider;
 import com.mymusiclist.backend.member.repository.MemberRepository;
 import com.mymusiclist.backend.type.MemberStatus;
@@ -29,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -62,7 +65,7 @@ public class MemberServiceImpl implements MemberService {
       throw new InvalidEmailException();
     }
 
-    MemberEntity memberEntity = MemberDto.signUpInput(signUpRequest);
+    MemberEntity memberEntity = SignUpRequest.signUpInput(signUpRequest);
     memberRepository.save(memberEntity);
 
     String email = signUpRequest.getEmail();
@@ -120,6 +123,8 @@ public class MemberServiceImpl implements MemberService {
     MemberEntity member = byEmail.get();
     if (member.getStatus().equals(MemberStatus.SUSPENDED.getDescription())) {
       throw new SuspendedMemberException();
+    } else if (member.getStatus().equals(MemberStatus.WAITING_FOR_APPROVAL.getDescription())) {
+      throw new WaitingMemberException();
     }
 
     // 패스워드 검증
@@ -245,6 +250,38 @@ public class MemberServiceImpl implements MemberService {
     memberRepository.save(memberEntity);
 
     return "비밀번호 변경을 완료했습니다.";
+  }
+
+  @Override
+  @Transactional
+  public MemberDto update(UpdateRequest updateRequest) {
+
+    Optional<MemberEntity> byEmail = memberRepository.findByEmail(updateRequest.getEmail());
+    if (byEmail.isEmpty()) {
+      throw new NotFoundMemberException();
+    }
+
+    MemberEntity member = byEmail.get();
+    MemberEntity memberEntity = MemberEntity.builder()
+        .memberId(member.getMemberId())
+        .email(member.getEmail())
+        .password(member.getPassword())
+        .name(member.getName())
+        .nickname(updateRequest.getNickname())
+        .regDate(member.getRegDate())
+        .modDate(LocalDateTime.now())
+        .auth(member.getAuth())
+        .authCode(member.getAuthCode())
+        .imageUrl(updateRequest.getImageUrl())
+        .introduction(updateRequest.getIntroduction())
+        .status(member.getStatus())
+        .adminYn(member.getAdminYn())
+        .passwordAuthCode(member.getPasswordAuthCode())
+        .passwordDate(member.getPasswordDate())
+        .build();
+    memberRepository.save(memberEntity);
+
+    return MemberDto.of(memberEntity);
   }
 
   private boolean isValidEmail(String email) {
