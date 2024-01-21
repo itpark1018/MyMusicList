@@ -58,7 +58,7 @@
   - 게시글 제목, 게시글 내용, 공유된 뮤직 리스트, 작성자, 작성일, 추천개수가 조회됩니다.
  
 - 내 게시글 조회
-  - 자신이 작성 게시글 목록을 조회 가능합니다.
+  - 자신이 작성한 게시글 목록을 조회 가능합니다.
   
 - 게시글 추천(좋아요) 기능
   - 로그인한 회원만 추천이 가능합니다.
@@ -94,7 +94,7 @@
   - 관리자 계정에 한에서 삭제된 게시글, 댓글을 검색, 확인할 수 있습니다.
 
 # ERD
-![MyMusicList](https://github.com/itpark1018/MyMusicList/assets/117416583/ff404d2d-b7b1-4eaf-8c87-a67deb2d4434)
+![MyMusicList](https://github.com/itpark1018/MyMusicList/assets/117416583/510fd5c8-fa2d-4c3d-bfce-855e8f70f637)
 
 # 기술스택
 - SpringBoot
