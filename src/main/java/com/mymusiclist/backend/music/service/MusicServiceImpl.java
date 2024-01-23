@@ -177,14 +177,8 @@ public class MusicServiceImpl implements MusicService {
 
     MyMusicListEntity myMusicListEntity = new MyMusicListEntity();
     if (updateRequest.getMusicName().isEmpty()) {
-      myMusicListEntity = MyMusicListEntity.builder()
-          .listId(myMusicList.getListId())
+      myMusicListEntity = myMusicList.toBuilder()
           .listName(updateRequest.getListName())
-          .memberId(myMusicList.getMemberId())
-          .numberOfMusic(myMusicList.getNumberOfMusic())
-          .repeatPlay(myMusicList.getRepeatPlay())
-          .randomPlay(myMusicList.getRandomPlay())
-          .regDate(myMusicList.getRegDate())
           .build();
       myMusicListRepository.save(myMusicListEntity);
     } else {
@@ -196,14 +190,9 @@ public class MusicServiceImpl implements MusicService {
         MusicEntity music = byMusicName.get();
         musicRepository.delete(music);
 
-        myMusicListEntity = MyMusicListEntity.builder()
-            .listId(myMusicList.getListId())
+        myMusicListEntity = myMusicList.toBuilder()
             .listName(updateRequest.getListName())
-            .memberId(myMusicList.getMemberId())
             .numberOfMusic(myMusicList.getNumberOfMusic() - 1)
-            .repeatPlay(myMusicList.getRepeatPlay())
-            .randomPlay(myMusicList.getRandomPlay())
-            .regDate(myMusicList.getRegDate())
             .build();
         myMusicListRepository.save(myMusicListEntity);
       }
@@ -287,16 +276,11 @@ public class MusicServiceImpl implements MusicService {
         .musicName(addRequest.getMusicName())
         .musicUrl(addRequest.getMusicUrl())
         .build();
-    musicRepository.save(musicEntity);
+    musicRepository.save(musicEntity);;
 
-    MyMusicListEntity myMusicListEntity = MyMusicListEntity.builder()
-        .listId(myMusicList.getListId())
-        .listName(myMusicList.getListName())
-        .memberId(member)
+    // 해당하는 뮤직 리스트의 노래 개수를 증가
+    MyMusicListEntity myMusicListEntity = myMusicList.toBuilder()
         .numberOfMusic(myMusicList.getNumberOfMusic() + 1)
-        .repeatPlay(myMusicList.getRepeatPlay())
-        .randomPlay(myMusicList.getRandomPlay())
-        .regDate(myMusicList.getRegDate())
         .build();
     myMusicListRepository.save(myMusicListEntity);
 

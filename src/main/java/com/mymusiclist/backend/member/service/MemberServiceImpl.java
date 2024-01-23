@@ -2,6 +2,7 @@ package com.mymusiclist.backend.member.service;
 
 import com.mymusiclist.backend.components.MailComponents;
 import com.mymusiclist.backend.exception.impl.DuplicateEmailException;
+import com.mymusiclist.backend.exception.impl.DuplicateNicknameException;
 import com.mymusiclist.backend.exception.impl.ExpiredException;
 import com.mymusiclist.backend.exception.impl.InvalidAuthCodeException;
 import com.mymusiclist.backend.exception.impl.InvalidEmailException;
@@ -20,13 +21,19 @@ import com.mymusiclist.backend.member.dto.request.TokenRequest;
 import com.mymusiclist.backend.member.dto.request.UpdateRequest;
 import com.mymusiclist.backend.member.jwt.JwtTokenProvider;
 import com.mymusiclist.backend.member.repository.MemberRepository;
+import com.mymusiclist.backend.post.domain.CommentEntity;
+import com.mymusiclist.backend.post.domain.PostEntity;
+import com.mymusiclist.backend.post.repository.CommentRepository;
+import com.mymusiclist.backend.post.repository.PostRepository;
 import com.mymusiclist.backend.type.MemberStatus;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -47,6 +54,8 @@ public class MemberServiceImpl implements MemberService {
   private final JwtTokenProvider jwtTokenProvider;
   private final PasswordEncoder passwordEncoder;
   private final RedisTemplate redisTemplate;
+  private final PostRepository postRepository;
+  private final CommentRepository commentRepository;
 
   @Override
   @Transactional
@@ -63,6 +72,12 @@ public class MemberServiceImpl implements MemberService {
 
     if (!isValidEmail(signUpRequest.getEmail())) {
       throw new InvalidEmailException();
+    }
+
+    Optional<MemberEntity> byNickname = memberRepository.findByNickname(
+        signUpRequest.getNickname());
+    if (byNickname.isPresent()) {
+      throw new DuplicateNicknameException();
     }
 
     MemberEntity memberEntity = SignUpRequest.signUpInput(signUpRequest);
@@ -93,19 +108,9 @@ public class MemberServiceImpl implements MemberService {
       throw new InvalidAuthCodeException();
     }
 
-    MemberEntity memberEntity = MemberEntity.builder()
-        .memberId(member.getMemberId())
-        .email(member.getEmail())
-        .password(member.getPassword())
-        .name(member.getName())
-        .nickname(member.getNickname())
-        .regDate(member.getRegDate())
+    MemberEntity memberEntity = member.toBuilder()
         .auth(true)
-        .authCode(member.getAuthCode())
-        .imageUrl(member.getImageUrl())
-        .introduction(member.getIntroduction())
         .status(MemberStatus.ACTIVE.getDescription())
-        .adminYn(member.getAdminYn())
         .build();
     memberRepository.save(memberEntity);
 
@@ -184,20 +189,8 @@ public class MemberServiceImpl implements MemberService {
     MemberEntity member = byEmail.get();
     String uuid = UUID.randomUUID().toString();
     String encPassword = BCrypt.hashpw(resetRequest.getResetPassword(), BCrypt.gensalt());
-    MemberEntity memberEntity = MemberEntity.builder()
-        .memberId(member.getMemberId())
-        .email(member.getEmail())
-        .password(member.getPassword())
-        .name(member.getName())
-        .nickname(member.getNickname())
-        .regDate(member.getRegDate())
-        .modDate(member.getModDate())
-        .auth(member.getAuth())
-        .authCode(member.getAuthCode())
-        .imageUrl(member.getImageUrl())
-        .introduction(member.getIntroduction())
-        .status(member.getStatus())
-        .adminYn(member.getAdminYn())
+
+    MemberEntity memberEntity = member.toBuilder()
         .passwordAuthCode(uuid)
         .passwordDate(LocalDateTime.now().plusMinutes(30))
         .build();
@@ -208,7 +201,8 @@ public class MemberServiceImpl implements MemberService {
     String title = "MyMusicList 비밀번호 변경";
     String message = "<h3>MyMusicList 비밀번호 변경을 위해서 아래의 링크를 클릭하셔서 인증을 완료해주세요.</h3>" +
         "<div><a href='" + baseUrl + "/member/password/auth?email=" + email + "&code="
-        + memberEntity.getPasswordAuthCode() + "&resetPassword=" + encPassword + "'> 인증 링크 </a></div>";
+        + memberEntity.getPasswordAuthCode() + "&resetPassword=" + encPassword
+        + "'> 인증 링크 </a></div>";
     mailComponents.sendMail(email, title, message);
 
     return "이메일을 확인해 인증을 진행해주세요.";
@@ -232,20 +226,12 @@ public class MemberServiceImpl implements MemberService {
       throw new ExpiredException();
     }
 
-    MemberEntity memberEntity = MemberEntity.builder()
-        .memberId(member.getMemberId())
-        .email(member.getEmail())
+    MemberEntity memberEntity = member.toBuilder()
         .password(resetPassword)
-        .name(member.getName())
-        .nickname(member.getNickname())
-        .regDate(member.getRegDate())
         .modDate(LocalDateTime.now())
         .auth(true)
-        .authCode(member.getAuthCode())
-        .imageUrl(member.getImageUrl())
-        .introduction(member.getIntroduction())
-        .status(MemberStatus.ACTIVE.getDescription())
-        .adminYn(member.getAdminYn())
+        .passwordAuthCode(null)
+        .passwordDate(null)
         .build();
     memberRepository.save(memberEntity);
 
@@ -264,27 +250,44 @@ public class MemberServiceImpl implements MemberService {
       throw new NotFoundMemberException();
     }
 
+    Optional<MemberEntity> byNickname = memberRepository.findByNickname(
+        updateRequest.getNickname());
+    if (byNickname.isPresent()) {
+      throw new DuplicateNicknameException();
+    }
+
     MemberEntity member = byEmail.get();
-    MemberEntity memberEntity = MemberEntity.builder()
-        .memberId(member.getMemberId())
-        .email(member.getEmail())
-        .password(member.getPassword())
-        .name(member.getName())
+    if (!updateRequest.getNickname().equals(member.getNickname())) {
+      // 사용자가 작성한 게시글, 댓글의 닉네임을 새롭게 변경하는 닉네임으로 변경
+      updateNicknameInPostsAndComments(member, updateRequest.getNickname());
+    }
+
+    MemberEntity memberEntity = member.toBuilder()
         .nickname(updateRequest.getNickname())
-        .regDate(member.getRegDate())
         .modDate(LocalDateTime.now())
-        .auth(member.getAuth())
-        .authCode(member.getAuthCode())
         .imageUrl(updateRequest.getImageUrl())
         .introduction(updateRequest.getIntroduction())
-        .status(member.getStatus())
-        .adminYn(member.getAdminYn())
-        .passwordAuthCode(member.getPasswordAuthCode())
-        .passwordDate(member.getPasswordDate())
         .build();
     memberRepository.save(memberEntity);
 
     return MemberDto.of(memberEntity);
+  }
+
+  @Transactional
+  public void updateNicknameInPostsAndComments(MemberEntity member, String newNickname) {
+    // 사용자가 작성한 게시글의 닉네임 변경
+    List<PostEntity> userPosts = postRepository.findAllByMemberId(member);
+    List<PostEntity> updatedPosts = userPosts.stream()
+        .map(post -> post.toBuilder().nickname(newNickname).build())
+        .collect(Collectors.toList());
+    postRepository.saveAll(updatedPosts);
+
+    // 사용자가 작성한 댓글의 닉네임 변경
+    List<CommentEntity> userComments = commentRepository.findAllByMemberId(member);
+    List<CommentEntity> updatedComments = userComments.stream()
+        .map(comment -> comment.toBuilder().nickname(newNickname).build())
+        .collect(Collectors.toList());
+    commentRepository.saveAll(updatedComments);
   }
 
   private boolean isValidEmail(String email) {

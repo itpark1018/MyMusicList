@@ -1,6 +1,7 @@
-package com.mymusiclist.backend.music.domain;
+package com.mymusiclist.backend.post.domain;
 
 import com.mymusiclist.backend.member.domain.MemberEntity;
+import com.mymusiclist.backend.music.domain.MyMusicListEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -16,32 +17,34 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "my_music_list")
+@Table(name = "post")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-public class MyMusicListEntity {
+public class PostEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long listId;
+  private Long postId;
 
-  private String listName;
+  private String title;
 
   @ManyToOne
   @JoinColumn(name = "member_id")
   private MemberEntity memberId;
 
-  private Long numberOfMusic;
-  private Boolean repeatPlay;
-  private Boolean randomPlay;
-  private LocalDateTime regDate;
+  private String nickname;
+  private String content;
 
-  public void updatePlayOptions(Boolean repeatPlay, Boolean randomPlay) {
-    if (!this.repeatPlay.equals(repeatPlay) || !this.randomPlay.equals(randomPlay)) {
-      this.repeatPlay = repeatPlay;
-      this.randomPlay = randomPlay;
-    }
-  }
+  @ManyToOne
+  @JoinColumn(name = "list_id")
+  private MyMusicListEntity listId;
+
+  private Integer likeCnt;
+  private Integer commentCnt;
+  private String status;
+  private LocalDateTime createDate;
+  private LocalDateTime modDate;
+  private LocalDateTime deleteDate;
 }
