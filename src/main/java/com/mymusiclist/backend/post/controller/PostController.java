@@ -73,10 +73,4 @@ public class PostController {
     List<PostListDto> response = postService.search(keyword, searchOption);
     return ResponseEntity.ok(response);
   }
-
-  @PostMapping("list/{title}/comment")
-  public void comment(@PathVariable String title) {
-
-  }
-
 }
