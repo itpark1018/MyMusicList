@@ -70,5 +70,4 @@ public class PostController {
     List<PostListDto> response = postService.search(keyword, searchOption);
     return ResponseEntity.ok(response);
   }
-
 }
