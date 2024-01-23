@@ -16,6 +16,7 @@ import lombok.Setter;
 @Builder
 public class PostDetailDto {
 
+  private Long postId;
   private String title;
   private String nickname;
   private LocalDateTime createDate;

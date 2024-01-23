@@ -11,15 +11,15 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PostRepository extends JpaRepository<PostEntity, Long> {
 
-  Optional<PostEntity> findByTitleAndMemberId(String title, MemberEntity member);
-
   List<PostEntity> findAllByMemberId(MemberEntity member);
 
   List<PostEntity> findByStatusOrderByCreateDateDesc(String status);
 
   List<PostEntity> findByStatusOrderByLikeCntDesc(String status);
 
-  Optional<PostEntity> findByTitleAndNickname(String title, String nickname);
+  Optional<PostEntity> findByPostId(Long postId);
+
+  Optional<PostEntity> findByPostIdAndMemberId(Long postId, MemberEntity member);
 
   List<PostEntity> findByMemberIdAndStatus(MemberEntity member, String status);
 

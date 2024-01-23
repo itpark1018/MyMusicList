@@ -1,6 +1,7 @@
 package com.mymusiclist.backend.post.service;
 
 import com.mymusiclist.backend.exception.impl.DeletePostException;
+import com.mymusiclist.backend.exception.impl.InvalidAuthException;
 import com.mymusiclist.backend.exception.impl.NotFoundMemberException;
 import com.mymusiclist.backend.exception.impl.NotFoundMusicListException;
 import com.mymusiclist.backend.exception.impl.NotFoundPostException;
@@ -84,7 +85,7 @@ public class PostServiceImpl implements PostService {
 
   @Override
   @Transactional
-  public String update(String title, PostRequest postRequest) {
+  public String update(Long postId, PostRequest postRequest) {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
@@ -94,11 +95,17 @@ public class PostServiceImpl implements PostService {
     }
     MemberEntity member = byEmail.get();
 
-    Optional<PostEntity> byTitleAndMemberId = postRepository.findByTitleAndMemberId(title, member);
-    if (byTitleAndMemberId.isEmpty()) {
+    Optional<PostEntity> byPostId = postRepository.findByPostId(postId);
+    if (byPostId.isEmpty()) {
       throw new NotFoundPostException();
     }
-    PostEntity post = byTitleAndMemberId.get();
+
+    // 게시글 수정을 요청한 사용자 본인이 작성한 게시글인지 확인
+    Optional<PostEntity> byPostIdAndMemberId = postRepository.findByPostIdAndMemberId(postId, member);
+    if (byPostIdAndMemberId.isEmpty()) {
+      throw new InvalidAuthException();
+    }
+    PostEntity post = byPostIdAndMemberId.get();
 
     // 삭제되어있는 게시글일 경우
     if (post.getStatus().equals(PostStatus.DELETED.getDescription())) {
@@ -125,7 +132,7 @@ public class PostServiceImpl implements PostService {
 
   @Override
   @Transactional
-  public String delete(String title) {
+  public String delete(Long postId) {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
@@ -135,11 +142,11 @@ public class PostServiceImpl implements PostService {
     }
     MemberEntity member = byEmail.get();
 
-    Optional<PostEntity> byTitleAndMemberId = postRepository.findByTitleAndMemberId(title, member);
-    if (byTitleAndMemberId.isEmpty()) {
+    Optional<PostEntity> byPostIdAndMemberId = postRepository.findByPostIdAndMemberId(postId, member);
+    if (byPostIdAndMemberId.isEmpty()) {
       throw new NotFoundPostException();
     }
-    PostEntity post = byTitleAndMemberId.get();
+    PostEntity post = byPostIdAndMemberId.get();
 
     // 이미 삭제되어있는 게시글일 경우
     if (post.getStatus().equals(PostStatus.DELETED.getDescription())) {
@@ -179,6 +186,7 @@ public class PostServiceImpl implements PostService {
     List<PostListDto> postList = posts.stream()
         .map(post -> {
           PostListDto postListDto = new PostListDto();
+          postListDto.setPostId(post.getPostId());
           postListDto.setTitle(post.getTitle());
           postListDto.setNickName(post.getNickname());
           postListDto.setCreateDate(post.getCreateDate());
@@ -192,14 +200,13 @@ public class PostServiceImpl implements PostService {
   }
 
   @Override
-  public PostDetailDto getDetail(String title, String nickname) {
+  public PostDetailDto getDetail(Long postId) {
 
-    Optional<PostEntity> byTitleAndNickname = postRepository.findByTitleAndNickname(title,
-        nickname);
-    if (byTitleAndNickname.isEmpty()) {
+    Optional<PostEntity> byPostId = postRepository.findByPostId(postId);
+    if (byPostId.isEmpty()) {
       throw new NotFoundPostException();
     }
-    PostEntity post = byTitleAndNickname.get();
+    PostEntity post = byPostId.get();
     if (post.getStatus().equals(PostStatus.DELETED.getDescription())) {
       throw new DeletePostException();
     }
@@ -251,7 +258,7 @@ public class PostServiceImpl implements PostService {
 
   @Override
   @Transactional
-  public void like(String title, String writerNickname) {
+  public void like(Long postId) {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
@@ -261,11 +268,11 @@ public class PostServiceImpl implements PostService {
     }
     MemberEntity member = byEmail.get();
 
-    Optional<PostEntity> byTitleAndNickname = postRepository.findByTitleAndNickname(title, writerNickname);
-    if (byTitleAndNickname.isEmpty()) {
+    Optional<PostEntity> byPostId = postRepository.findByPostId(postId);
+    if (byPostId.isEmpty()) {
       throw new NotFoundPostException();
     }
-    PostEntity post = byTitleAndNickname.get();
+    PostEntity post = byPostId.get();
 
     // 게시글 추천 요청이 왔을 때 추천한 적이 없으면 게시글의 추천개수가 1개 늘어나고 게시글 추천 DB에 데이터가 저장
     // 반대로 이미 추천한 게시글일 경우 추천이 취소되면서 게시글의 추천개수가 1개 줄어들고 게시글 추천 DB에서 데이터가 삭제

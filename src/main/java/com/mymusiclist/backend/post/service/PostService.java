@@ -11,17 +11,17 @@ public interface PostService {
 
   String create(PostRequest postRequest);
 
-  String update(String title, PostRequest postRequest);
+  String update(Long postId, PostRequest postRequest);
 
-  String delete(String title);
+  String delete(Long postId);
 
   List<PostListDto> getList(Boolean sortByLikes);
 
-  PostDetailDto getDetail(String title, String nickname);
+  PostDetailDto getDetail(Long postId);
 
   List<PostListDto> getMyPost();
 
-  void like(String title, String writerNickname);
+  void like(Long postId);
 
   List<PostListDto> search(String keyword, String searchOption);
 }

@@ -28,16 +28,15 @@ public class PostController {
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("/{title}/update")
-  public ResponseEntity<String> update(@PathVariable String title,
-      @RequestBody PostRequest postRequest) {
-    String response = postService.update(title, postRequest);
+  @PostMapping("/{postId}/update")
+  public ResponseEntity<String> update(@PathVariable Long postId, @RequestBody PostRequest postRequest) {
+    String response = postService.update(postId, postRequest);
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("/{title}/delete")
-  public ResponseEntity<String> delete(@PathVariable String title) {
-    String response = postService.delete(title);
+  @PostMapping("/{postId}/delete")
+  public ResponseEntity<String> delete(@PathVariable Long postId) {
+    String response = postService.delete(postId);
     return ResponseEntity.ok(response);
   }
 
@@ -48,10 +47,9 @@ public class PostController {
     return ResponseEntity.ok(response);
   }
 
-  @GetMapping("/list/{title}")
-  public ResponseEntity<PostDetailDto> getDetail(@PathVariable String title,
-      @RequestParam(name = "nickname") String nickname) {
-    PostDetailDto response = postService.getDetail(title, nickname);
+  @GetMapping("/list/{postId}")
+  public ResponseEntity<PostDetailDto> getDetail(@PathVariable Long postId) {
+    PostDetailDto response = postService.getDetail(postId);
     return ResponseEntity.ok(response);
   }
 
@@ -61,10 +59,9 @@ public class PostController {
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("/list/{title}/like")
-  public void postLike(@PathVariable String title,
-      @RequestParam(name = "nickname") String writerNickname) {
-    postService.like(title, writerNickname);
+  @PostMapping("/list/{postId}/like")
+  public void postLike(@PathVariable Long postId) {
+    postService.like(postId);
   }
 
   @GetMapping("/search")
@@ -72,11 +69,6 @@ public class PostController {
       @RequestParam(name = "searchOption") String searchOption) {
     List<PostListDto> response = postService.search(keyword, searchOption);
     return ResponseEntity.ok(response);
-  }
-
-  @PostMapping("list/{title}/comment")
-  public void comment(@PathVariable String title) {
-
   }
 
 }
