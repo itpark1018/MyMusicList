@@ -18,8 +18,8 @@ public class CommentServiceImpl implements CommentService {
   @Override
   public List<CommentDto> getList(PostEntity postEntity) {
 
-    List<CommentEntity> commentList = commentRepository.findByPostIdAndStatus(postEntity,
-        CommentStatus.ACTIVE.getDescription());
+    List<CommentEntity> commentList = commentRepository.findByPostIdAndStatusOrderByCreateDateDesc(
+        postEntity, CommentStatus.ACTIVE.getDescription());
 
     return CommentDto.listOf(commentList);
   }

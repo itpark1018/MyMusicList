@@ -10,11 +10,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CommentRepository extends JpaRepository<CommentEntity, Long> {
 
-  Integer countByPostId(PostEntity post);
-
   List<CommentEntity> findAllByMemberId(MemberEntity member);
 
-  List<CommentEntity> findByPostIdAndStatus(PostEntity postEntity, String status);
-
   List<CommentEntity> findByPostId(PostEntity post);
+
+  List<CommentEntity> findByPostIdAndStatusOrderByCreateDateDesc(PostEntity postEntity, String status);
 }

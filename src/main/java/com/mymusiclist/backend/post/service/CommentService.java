@@ -10,5 +10,4 @@ import org.springframework.stereotype.Service;
 public interface CommentService {
 
   List<CommentDto> getList(PostEntity postEntity);
-
 }

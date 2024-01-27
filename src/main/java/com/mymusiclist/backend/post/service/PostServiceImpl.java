@@ -215,6 +215,7 @@ public class PostServiceImpl implements PostService {
     List<CommentDto> commentList = commentService.getList(post);
 
     PostDetailDto postDetailDto = PostDetailDto.builder()
+        .postId(post.getPostId())
         .title(post.getTitle())
         .nickname(post.getNickname())
         .createDate(post.getCreateDate())
@@ -244,6 +245,7 @@ public class PostServiceImpl implements PostService {
     List<PostListDto> postList = posts.stream()
         .map(post -> {
           PostListDto postListDto = new PostListDto();
+          postListDto.setPostId(post.getPostId());
           postListDto.setTitle(post.getTitle());
           postListDto.setNickName(post.getNickname());
           postListDto.setCreateDate(post.getCreateDate());
@@ -326,6 +328,7 @@ public class PostServiceImpl implements PostService {
     List<PostListDto> postList = posts.stream()
         .map(post -> {
           PostListDto postListDto = new PostListDto();
+          postListDto.setPostId(post.getPostId());
           postListDto.setTitle(post.getTitle());
           postListDto.setNickName(post.getNickname());
           postListDto.setCreateDate(post.getCreateDate());

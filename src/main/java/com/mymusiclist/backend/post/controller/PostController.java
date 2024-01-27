@@ -3,6 +3,7 @@ package com.mymusiclist.backend.post.controller;
 import com.mymusiclist.backend.post.dto.PostDetailDto;
 import com.mymusiclist.backend.post.dto.PostListDto;
 import com.mymusiclist.backend.post.dto.request.PostRequest;
+import com.mymusiclist.backend.post.service.CommentService;
 import com.mymusiclist.backend.post.service.PostService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -48,7 +49,7 @@ public class PostController {
   }
 
   @GetMapping("/list/{postId}")
-  public ResponseEntity<PostDetailDto> getDetail(@PathVariable Long postId) {
+  public ResponseEntity<PostDetailDto> getDetail(@PathVariable(name = "postId") Long postId) {
     PostDetailDto response = postService.getDetail(postId);
     return ResponseEntity.ok(response);
   }
@@ -60,7 +61,7 @@ public class PostController {
   }
 
   @PostMapping("/list/{postId}/like")
-  public void postLike(@PathVariable Long postId) {
+  public void postLike(@PathVariable(name = "postId") Long postId) {
     postService.like(postId);
   }
 

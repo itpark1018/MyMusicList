@@ -17,6 +17,7 @@ import lombok.Setter;
 @Builder
 public class CommentDto {
 
+  private Long postId;
   private String nickname;
   private String comment;
   private Integer likeCnt;
@@ -30,6 +31,7 @@ public class CommentDto {
 
   public static CommentDto of(CommentEntity commentEntity) {
     return CommentDto.builder()
+        .postId(commentEntity.getPostId().getPostId())
         .nickname(commentEntity.getNickname())
         .comment(commentEntity.getComment())
         .likeCnt(commentEntity.getLikeCnt())
