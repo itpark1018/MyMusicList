@@ -1,7 +1,9 @@
 package com.mymusiclist.backend.post.controller;
 
+import com.mymusiclist.backend.post.dto.MyCommentDto;
 import com.mymusiclist.backend.post.dto.PostDetailDto;
 import com.mymusiclist.backend.post.dto.PostListDto;
+import com.mymusiclist.backend.post.dto.request.CommentRequest;
 import com.mymusiclist.backend.post.dto.request.PostRequest;
 import com.mymusiclist.backend.post.service.CommentService;
 import com.mymusiclist.backend.post.service.PostService;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class PostController {
 
   private final PostService postService;
+  private final CommentService commentService;
 
   @PostMapping("/create")
   public ResponseEntity<String> create(@RequestBody PostRequest postRequest) {
@@ -30,7 +33,8 @@ public class PostController {
   }
 
   @PostMapping("/{postId}/update")
-  public ResponseEntity<String> update(@PathVariable Long postId, @RequestBody PostRequest postRequest) {
+  public ResponseEntity<String> update(@PathVariable Long postId,
+      @RequestBody PostRequest postRequest) {
     String response = postService.update(postId, postRequest);
     return ResponseEntity.ok(response);
   }
@@ -69,6 +73,41 @@ public class PostController {
   public ResponseEntity<List<PostListDto>> search(@RequestParam(name = "keyword") String keyword,
       @RequestParam(name = "searchOption") String searchOption) {
     List<PostListDto> response = postService.search(keyword, searchOption);
+    return ResponseEntity.ok(response);
+  }
+
+  @PostMapping("/list/{postId}/comment/create")
+  public ResponseEntity<String> commentCreate(@PathVariable(name = "postId") Long postId,
+      @RequestBody
+      CommentRequest commentRequest) {
+    String response = commentService.create(postId, commentRequest);
+    return ResponseEntity.ok(response);
+  }
+
+  @PostMapping("/list/{postId}/comment/delete/{commentId}")
+  public ResponseEntity<String> commentDelete(@PathVariable(name = "postId") Long postId,
+      @PathVariable(name = "commentId") Long commentId) {
+    String response = commentService.delete(postId, commentId);
+    return ResponseEntity.ok(response);
+  }
+
+  @PostMapping("/list/{postId}/comment/update/{commentId}")
+  public ResponseEntity<String> commentUpdate(@PathVariable(name = "postId") Long postId,
+      @PathVariable(name = "commentId") Long commentId,
+      @RequestBody CommentRequest commentRequest) {
+    String response = commentService.update(postId, commentId, commentRequest);
+    return ResponseEntity.ok(response);
+  }
+
+  @PostMapping("/list/{postId}/comment/{commentId}/like")
+  public void commentLike(@PathVariable(name = "postId") Long postId,
+      @PathVariable(name = "commentId") Long commentId) {
+    commentService.like(postId, commentId);
+  }
+
+  @GetMapping("/myComment")
+  public ResponseEntity<List<MyCommentDto>> getMyComment() {
+    List<MyCommentDto> response = commentService.getMyComment();
     return ResponseEntity.ok(response);
   }
 }

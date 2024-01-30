@@ -15,28 +15,27 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CommentDto {
+public class MyCommentDto {
 
-  private Long commentId;
-  private String nickname;
+  private Long postId;
+  private String title;
   private String comment;
   private Integer likeCnt;
   private LocalDateTime createDate;
 
-  public static List<CommentDto> listOf(List<CommentEntity> commentEntities) {
+  public static List<MyCommentDto> listOf(List<CommentEntity> commentEntities) {
     return commentEntities.stream()
-        .map(CommentDto::of)
+        .map(MyCommentDto::of)
         .collect(Collectors.toList());
   }
 
-  public static CommentDto of(CommentEntity commentEntity) {
-    return CommentDto.builder()
-        .commentId(commentEntity.getCommentId())
-        .nickname(commentEntity.getNickname())
+  public static MyCommentDto of(CommentEntity commentEntity) {
+    return MyCommentDto.builder()
+        .postId(commentEntity.getPostId().getPostId())
+        .title(commentEntity.getPostId().getTitle())
         .comment(commentEntity.getComment())
         .likeCnt(commentEntity.getLikeCnt())
         .createDate(commentEntity.getCreateDate())
         .build();
   }
-
 }
