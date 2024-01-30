@@ -3,7 +3,7 @@ package com.mymusiclist.backend.exception.impl;
 import com.mymusiclist.backend.exception.AbstractException;
 import org.springframework.http.HttpStatus;
 
-public class DuplicateListException extends AbstractException {
+public class MailSendException extends AbstractException {
 
   @Override
   public HttpStatus getHttpStatus() {
@@ -12,11 +12,11 @@ public class DuplicateListException extends AbstractException {
 
   @Override
   public String getErrorCode() {
-    return "LIST_DUPLICATE";
+    return "SEND_MAIL_FAIL";
   }
 
   @Override
   public String getMessage() {
-    return "동일한 뮤직 리스트 이름이 이미 있습니다.";
+    return "메일전송에 실패했습니다.";
   }
 }

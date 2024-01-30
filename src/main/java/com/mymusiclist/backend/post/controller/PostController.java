@@ -33,14 +33,14 @@ public class PostController {
   }
 
   @PostMapping("/{postId}/update")
-  public ResponseEntity<String> update(@PathVariable Long postId,
+  public ResponseEntity<String> update(@PathVariable(name = "postId") Long postId,
       @RequestBody PostRequest postRequest) {
     String response = postService.update(postId, postRequest);
     return ResponseEntity.ok(response);
   }
 
   @PostMapping("/{postId}/delete")
-  public ResponseEntity<String> delete(@PathVariable Long postId) {
+  public ResponseEntity<String> delete(@PathVariable(name = "postId") Long postId) {
     String response = postService.delete(postId);
     return ResponseEntity.ok(response);
   }

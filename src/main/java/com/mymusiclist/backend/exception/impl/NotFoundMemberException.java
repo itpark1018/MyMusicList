@@ -6,8 +6,13 @@ import org.springframework.http.HttpStatus;
 public class NotFoundMemberException extends AbstractException {
 
   @Override
-  public int getStatusCode() {
-    return HttpStatus.NOT_FOUND.value();
+  public HttpStatus getHttpStatus() {
+    return HttpStatus.NOT_FOUND;
+  }
+
+  @Override
+  public String getErrorCode() {
+    return "MEMBER_NOT_FOUND";
   }
 
   @Override

@@ -12,11 +12,11 @@ public class CustomExceptionHandler {
   protected ResponseEntity<ErrorResponse> handleCustomException(AbstractException e) {
 
     ErrorResponse errorResponse = ErrorResponse.builder()
-        .code(e.getStatusCode())
+        .errorCode(e.getErrorCode())
         .message(e.getMessage())
         .build();
 
-    return new ResponseEntity<>(errorResponse, HttpStatus.resolve(e.getStatusCode()));
+    return new ResponseEntity<>(errorResponse, e.getHttpStatus());
   }
 
 }

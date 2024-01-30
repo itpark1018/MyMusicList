@@ -1,5 +1,6 @@
 package com.mymusiclist.backend.member.jwt;
 
+import com.mymusiclist.backend.member.dto.TokenDto;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -34,7 +35,7 @@ public class JwtTokenProvider {
     this.key = Keys.hmacShaKeyFor(keyBytes);
   }
 
-  public Map<String, String> createTokens(String email, Boolean isAdmin) {
+  public TokenDto createTokens(String email, Boolean isAdmin) {
     Claims claims = Jwts.claims().setSubject(email);
     claims.put("userId", email);
 
@@ -62,9 +63,10 @@ public class JwtTokenProvider {
         .signWith(SignatureAlgorithm.HS256, key)
         .compact();
 
-    Map<String, String> tokens = new HashMap<>();
-    tokens.put("accessToken", accessToken);
-    tokens.put("refreshToken", refreshToken);
+    TokenDto tokens = TokenDto.builder()
+        .accessToken(accessToken)
+        .refreshToken(refreshToken)
+        .build();
 
     return tokens;
   }

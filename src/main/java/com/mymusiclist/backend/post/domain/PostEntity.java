@@ -2,8 +2,11 @@ package com.mymusiclist.backend.post.domain;
 
 import com.mymusiclist.backend.member.domain.MemberEntity;
 import com.mymusiclist.backend.music.domain.MyMusicListEntity;
+import com.mymusiclist.backend.type.PostStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -43,7 +46,10 @@ public class PostEntity {
 
   private Integer likeCnt;
   private Integer commentCnt;
-  private String status;
+
+  @Enumerated(EnumType.STRING)
+  private PostStatus status;
+
   private LocalDateTime createDate;
   private LocalDateTime modDate;
   private LocalDateTime deleteDate;
