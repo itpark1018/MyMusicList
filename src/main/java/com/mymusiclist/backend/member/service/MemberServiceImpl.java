@@ -57,7 +57,7 @@ public class MemberServiceImpl implements MemberService {
   private final RedisTemplate redisTemplate;
   private final PostRepository postRepository;
   private final CommentRepository commentRepository;
-  private TokenService tokenService;
+  private final TokenService tokenService;
 
   @Override
   @Transactional
