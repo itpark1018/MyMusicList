@@ -1,9 +1,11 @@
 package com.mymusiclist.backend.member.controller;
 
+import com.mymusiclist.backend.member.dto.MemberDto;
 import com.mymusiclist.backend.member.dto.request.LoginRequest;
 import com.mymusiclist.backend.member.dto.request.ResetRequest;
 import com.mymusiclist.backend.member.dto.request.SignUpRequest;
 import com.mymusiclist.backend.member.dto.request.TokenRequest;
+import com.mymusiclist.backend.member.dto.request.UpdateRequest;
 import com.mymusiclist.backend.member.service.MemberService;
 import com.mymusiclist.backend.member.service.TokenService;
 import java.util.Map;
@@ -64,6 +66,12 @@ public class MemberController {
       @RequestParam(name = "code") String code,
       @RequestParam(name = "resetPassword") String resetPassword) {
     String response = memberService.passwordAuth(email, code, resetPassword);
+    return ResponseEntity.ok(response);
+  }
+
+  @PostMapping("/update")
+  public ResponseEntity<MemberDto> update(@RequestBody UpdateRequest updateRequest) {
+    MemberDto response = memberService.update(updateRequest);
     return ResponseEntity.ok(response);
   }
 }

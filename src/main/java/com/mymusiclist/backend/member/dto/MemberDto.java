@@ -20,37 +20,22 @@ import org.springframework.security.crypto.bcrypt.BCrypt;
 @Builder
 public class MemberDto {
 
-  private Long memberId;
   private String email;
-  private String password;
   private String name;
   private String nickname;
   private LocalDateTime regDate;
-  private LocalDateTime modDate;
-  private Boolean auth;
-  private String authCode;
   private String imageUrl;
   private String introduction;
-  private String status;
-  private Boolean adminYn;
-  private String passwordAuthCode;
-  private LocalDateTime passwordDate;
 
-  public static MemberEntity signUpInput(SignUpRequest signUpRequest) {
-    String uuid = UUID.randomUUID().toString();
-    String encPassword = BCrypt.hashpw(signUpRequest.getPassword(), BCrypt.gensalt());
+  public static MemberDto of(MemberEntity memberEntity) {
 
-    return MemberEntity.builder()
-        .email(signUpRequest.getEmail())
-        .password(encPassword)
-        .name(signUpRequest.getName())
-        .nickname(signUpRequest.getNickname())
-        .regDate(LocalDateTime.now())
-        .auth(false).authCode(uuid)
-        .imageUrl(signUpRequest.getImageUrl())
-        .introduction(signUpRequest.getIntroduction())
-        .status(MemberStatus.WAITING_FOR_APPROVAL.getDescription())
-        .adminYn(false)
+    return MemberDto.builder()
+        .email(memberEntity.getEmail())
+        .name(memberEntity.getName())
+        .nickname(memberEntity.getNickname())
+        .regDate(memberEntity.getRegDate())
+        .imageUrl(memberEntity.getImageUrl())
+        .introduction(memberEntity.getIntroduction())
         .build();
   }
 }
