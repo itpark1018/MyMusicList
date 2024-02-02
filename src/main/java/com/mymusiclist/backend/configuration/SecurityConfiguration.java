@@ -1,5 +1,6 @@
 package com.mymusiclist.backend.configuration;
 
+
 import com.mymusiclist.backend.member.jwt.JwtTokenFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

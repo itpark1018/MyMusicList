@@ -7,6 +7,8 @@ import com.mymusiclist.backend.member.dto.request.SignUpRequest;
 import com.mymusiclist.backend.member.dto.request.TokenRequest;
 import com.mymusiclist.backend.member.dto.request.UpdateRequest;
 import java.util.Map;
+import com.mymusiclist.backend.member.dto.parameter.SignUpParameter;
+import java.net.URISyntaxException;
 import org.springframework.stereotype.Service;
 
 @Service
