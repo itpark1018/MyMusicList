@@ -26,6 +26,15 @@ import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.mymusiclist.backend.exception.impl.NotFoundMemberException;
+import com.mymusiclist.backend.member.domain.MemberEntity;
+import com.mymusiclist.backend.member.dto.MemberDto;
+import com.mymusiclist.backend.member.dto.parameter.SignUpParameter;
+import com.mymusiclist.backend.member.repository.MemberRepository;
+import com.mymusiclist.backend.type.MemberStatus;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -155,7 +164,7 @@ public class MemberServiceImpl implements MemberService {
     long accessTokenExpiresIn = expiration - now;
     redisTemplate.opsForValue().set(tokenRequest.getAccessToken(), "logout", accessTokenExpiresIn, TimeUnit.MILLISECONDS);
   }
-
+  
   private boolean isValidEmail(String email) {
     return EmailValidator.getInstance().isValid(email);
   }

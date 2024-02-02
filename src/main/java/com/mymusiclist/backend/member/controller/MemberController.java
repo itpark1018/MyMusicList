@@ -6,6 +6,8 @@ import com.mymusiclist.backend.member.dto.request.TokenRequest;
 import com.mymusiclist.backend.member.service.MemberService;
 import com.mymusiclist.backend.member.service.TokenService;
 import java.util.Map;
+import com.mymusiclist.backend.member.dto.parameter.SignUpParameter;
+import com.mymusiclist.backend.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,8 +27,6 @@ public class MemberController {
   @PostMapping("/signup")
   public ResponseEntity<String> singUp(@RequestBody SignUpRequest signUpRequest) {
     String response = memberService.signUp(signUpRequest);
-    return ResponseEntity.ok(response);
-  }
 
   @PostMapping("/auth")
   public ResponseEntity<String> auth(@RequestParam(name = "email") String email,
