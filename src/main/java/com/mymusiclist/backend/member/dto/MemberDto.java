@@ -1,6 +1,7 @@
 package com.mymusiclist.backend.member.dto;
 
 import com.mymusiclist.backend.member.domain.MemberEntity;
+import com.mymusiclist.backend.member.dto.request.SignUpRequest;
 import com.mymusiclist.backend.member.dto.parameter.SignUpParameter;
 import com.mymusiclist.backend.type.MemberStatus;
 import java.time.LocalDateTime;
@@ -35,19 +36,19 @@ public class MemberDto {
   private String passwordAuthCode;
   private LocalDateTime passwordDate;
 
-  public static MemberEntity signUpInput(SignUpParameter signUpParameter) {
+  public static MemberEntity signUpInput(SignUpRequest signUpRequest) {
     String uuid = UUID.randomUUID().toString();
-    String encPassword = BCrypt.hashpw(signUpParameter.getPassword(), BCrypt.gensalt());
+    String encPassword = BCrypt.hashpw(signUpRequest.getPassword(), BCrypt.gensalt());
 
     return MemberEntity.builder()
-        .email(signUpParameter.getEmail())
+        .email(signUpRequest.getEmail())
         .password(encPassword)
-        .name(signUpParameter.getName())
-        .nickname(signUpParameter.getNickname())
+        .name(signUpRequest.getName())
+        .nickname(signUpRequest.getNickname())
         .regDate(LocalDateTime.now())
         .auth(false).authCode(uuid)
-        .imageUrl(signUpParameter.getImageUrl())
-        .introduction(signUpParameter.getIntroduction())
+        .imageUrl(signUpRequest.getImageUrl())
+        .introduction(signUpRequest.getIntroduction())
         .status(MemberStatus.WAITING_FOR_APPROVAL.getDescription())
         .build();
   }
