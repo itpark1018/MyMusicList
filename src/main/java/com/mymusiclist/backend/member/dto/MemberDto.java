@@ -50,6 +50,7 @@ public class MemberDto {
         .imageUrl(signUpRequest.getImageUrl())
         .introduction(signUpRequest.getIntroduction())
         .status(MemberStatus.WAITING_FOR_APPROVAL.getDescription())
+        .adminYn(false)
         .build();
   }
 }

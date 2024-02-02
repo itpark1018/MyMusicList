@@ -1,6 +1,7 @@
 package com.mymusiclist.backend.member.controller;
 
 import com.mymusiclist.backend.member.dto.request.LoginRequest;
+import com.mymusiclist.backend.member.dto.request.ResetRequest;
 import com.mymusiclist.backend.member.dto.request.SignUpRequest;
 import com.mymusiclist.backend.member.dto.request.TokenRequest;
 import com.mymusiclist.backend.member.service.MemberService;
@@ -30,7 +31,7 @@ public class MemberController {
 
   @PostMapping("/auth")
   public ResponseEntity<String> auth(@RequestParam(name = "email") String email,
-                                     @RequestParam(name = "code") String code) {
+      @RequestParam(name = "code") String code) {
     String response = memberService.auth(email, code);
     return ResponseEntity.ok(response);
   }
@@ -49,6 +50,20 @@ public class MemberController {
   @PostMapping("/reissue")
   public ResponseEntity<Map<String, String>> reIssue(@RequestBody TokenRequest TokenRequest) {
     Map<String, String> response = tokenService.reIssue(TokenRequest.getRefreshToken());
+    return ResponseEntity.ok(response);
+  }
+
+  @PostMapping("/password/reset")
+  public ResponseEntity<String> resetPassword(@RequestBody ResetRequest resetRequest) {
+    String response = memberService.resetPassword(resetRequest);
+    return ResponseEntity.ok(response);
+  }
+
+  @PostMapping("/password/auth")
+  public ResponseEntity<String> passwordAuth(@RequestParam(name = "email") String email,
+      @RequestParam(name = "code") String code,
+      @RequestParam(name = "resetPassword") String resetPassword) {
+    String response = memberService.passwordAuth(email, code, resetPassword);
     return ResponseEntity.ok(response);
   }
 }

@@ -2,6 +2,7 @@ package com.mymusiclist.backend.member.service;
 
 import com.mymusiclist.backend.components.MailComponents;
 import com.mymusiclist.backend.exception.impl.DuplicateEmailException;
+import com.mymusiclist.backend.exception.impl.ExpiredException;
 import com.mymusiclist.backend.exception.impl.InvalidAuthCodeException;
 import com.mymusiclist.backend.exception.impl.InvalidEmailException;
 import com.mymusiclist.backend.exception.impl.InvalidPasswordConfirmationException;
@@ -12,19 +13,23 @@ import com.mymusiclist.backend.exception.impl.SuspendedMemberException;
 import com.mymusiclist.backend.member.domain.MemberEntity;
 import com.mymusiclist.backend.member.dto.MemberDto;
 import com.mymusiclist.backend.member.dto.request.LoginRequest;
+import com.mymusiclist.backend.member.dto.request.ResetRequest;
 import com.mymusiclist.backend.member.dto.request.SignUpRequest;
 import com.mymusiclist.backend.member.dto.request.TokenRequest;
 import com.mymusiclist.backend.member.jwt.JwtTokenProvider;
 import com.mymusiclist.backend.member.repository.MemberRepository;
 import com.mymusiclist.backend.type.MemberStatus;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import com.mymusiclist.backend.exception.impl.NotFoundMemberException;
 import com.mymusiclist.backend.member.domain.MemberEntity;
@@ -88,8 +93,8 @@ public class MemberServiceImpl implements MemberService {
     if (byEmail.isEmpty()) {
       throw new NotFoundMemberException();
     }
-    MemberEntity member = byEmail.get();
 
+    MemberEntity member = byEmail.get();
     if (!code.equals(member.getAuthCode())) {
       throw new InvalidAuthCodeException();
     }
@@ -106,6 +111,7 @@ public class MemberServiceImpl implements MemberService {
         .imageUrl(member.getImageUrl())
         .introduction(member.getIntroduction())
         .status(MemberStatus.ACTIVE.getDescription())
+        .adminYn(member.getAdminYn())
         .build();
     memberRepository.save(memberEntity);
 
@@ -128,13 +134,16 @@ public class MemberServiceImpl implements MemberService {
     // 패스워드 검증
     if (passwordEncoder.matches(loginRequest.getPassword(), member.getPassword())) {
       // AccessToken 및 RefreshToken 생성
-      Map<String, String> token = jwtTokenProvider.createTokens(member.getEmail(), member.getAdminYn());
+      Map<String, String> token = jwtTokenProvider.createTokens(member.getEmail(),
+          member.getAdminYn());
 
       // Redis에 RefreshToken 저장
       String refreshToken = token.get("refreshToken");
       long refreshTokenExpiresIn = 86400000;
 
-      redisTemplate.opsForValue().set("RT:"+member.getEmail(), refreshToken, refreshTokenExpiresIn, TimeUnit.MILLISECONDS);
+      redisTemplate.opsForValue()
+          .set("RT:" + member.getEmail(), refreshToken, refreshTokenExpiresIn,
+              TimeUnit.MILLISECONDS);
 
       return token;
     } else {
@@ -151,18 +160,100 @@ public class MemberServiceImpl implements MemberService {
     }
 
     // 토큰을 통해 사용자 정보르 받아오기
-    Authentication authentication = jwtTokenProvider.getAuthentication(tokenRequest.getAccessToken());
+    Authentication authentication = jwtTokenProvider.getAuthentication(
+        tokenRequest.getAccessToken());
 
     // Redis에서 해당 유저의 email로 저장된 RefreshToken이 있는지 확인 후 있을 경우 삭제
-    if (redisTemplate.opsForValue().get("RT:"+authentication.getName()) != null) {
-      redisTemplate.delete("RT:"+authentication.getName());
+    if (redisTemplate.opsForValue().get("RT:" + authentication.getName()) != null) {
+      redisTemplate.delete("RT:" + authentication.getName());
     }
 
     // 해당 Access Token 유효시간을 가지고 와서 BlackList에 저장하기
     long expiration = jwtTokenProvider.getExpiration(tokenRequest.getAccessToken());
     long now = (new Date()).getTime();
     long accessTokenExpiresIn = expiration - now;
-    redisTemplate.opsForValue().set(tokenRequest.getAccessToken(), "logout", accessTokenExpiresIn, TimeUnit.MILLISECONDS);
+    redisTemplate.opsForValue()
+        .set(tokenRequest.getAccessToken(), "logout", accessTokenExpiresIn, TimeUnit.MILLISECONDS);
+  }
+
+  @Override
+  @Transactional
+  public String resetPassword(ResetRequest resetRequest) {
+
+    Optional<MemberEntity> byEmail = memberRepository.findByEmail(resetRequest.getEmail());
+    if (byEmail.isEmpty()) {
+      throw new NotFoundMemberException();
+    }
+
+    MemberEntity member = byEmail.get();
+    String uuid = UUID.randomUUID().toString();
+    String encPassword = BCrypt.hashpw(resetRequest.getResetPassword(), BCrypt.gensalt());
+    MemberEntity memberEntity = MemberEntity.builder()
+        .memberId(member.getMemberId())
+        .email(member.getEmail())
+        .password(member.getPassword())
+        .name(member.getName())
+        .nickname(member.getNickname())
+        .regDate(member.getRegDate())
+        .modDate(member.getModDate())
+        .auth(member.getAuth())
+        .authCode(member.getAuthCode())
+        .imageUrl(member.getImageUrl())
+        .introduction(member.getIntroduction())
+        .status(member.getStatus())
+        .adminYn(member.getAdminYn())
+        .passwordAuthCode(uuid)
+        .passwordDate(LocalDateTime.now().plusMinutes(30))
+        .build();
+    memberRepository.save(memberEntity);
+
+    String email = member.getEmail();
+    String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+    String title = "MyMusicList 비밀번호 변경";
+    String message = "<h3>MyMusicList 비밀번호 변경을 위해서 아래의 링크를 클릭하셔서 인증을 완료해주세요.</h3>" +
+        "<div><a href='" + baseUrl + "/member/password/auth?email=" + email + "&code="
+        + memberEntity.getPasswordAuthCode() + "&resetPassword=" + encPassword + "'> 인증 링크 </a></div>";
+    mailComponents.sendMail(email, title, message);
+
+    return "이메일을 확인해 인증을 진행해주세요.";
+  }
+
+  @Override
+  public String passwordAuth(String email, String code, String resetPassword) {
+
+    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
+    if (byEmail.isEmpty()) {
+      throw new NotFoundMemberException();
+    }
+
+    MemberEntity member = byEmail.get();
+    if (!code.equals(member.getPasswordAuthCode())) {
+      throw new InvalidAuthCodeException();
+    }
+
+    // 비밀번호 변경 기간이 지나면 exception 발생
+    if (member.getPasswordDate().isBefore(LocalDateTime.now())) {
+      throw new ExpiredException();
+    }
+
+    MemberEntity memberEntity = MemberEntity.builder()
+        .memberId(member.getMemberId())
+        .email(member.getEmail())
+        .password(resetPassword)
+        .name(member.getName())
+        .nickname(member.getNickname())
+        .regDate(member.getRegDate())
+        .modDate(LocalDateTime.now())
+        .auth(true)
+        .authCode(member.getAuthCode())
+        .imageUrl(member.getImageUrl())
+        .introduction(member.getIntroduction())
+        .status(MemberStatus.ACTIVE.getDescription())
+        .adminYn(member.getAdminYn())
+        .build();
+    memberRepository.save(memberEntity);
+
+    return "비밀번호 변경을 완료했습니다.";
   }
   
   private boolean isValidEmail(String email) {
