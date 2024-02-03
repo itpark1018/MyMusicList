@@ -2,8 +2,10 @@ package com.mymusiclist.backend.configuration;
 
 import com.mymusiclist.backend.member.jwt.JwtTokenFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -30,8 +32,13 @@ public class SecurityConfiguration {
                     "/member/login", "/member/logout", "/member/reissue", "/member/password/**",
                     "/post/list/**", "/post/search")
                 .permitAll()
-                .requestMatchers("/member/update", "/music/search", "/music/list/**",
-                    "/music/playList/**", "/post/**", "/post/list/**/like", "/post/list/**/comment/**").hasRole("USER"))
+                .requestMatchers("/member/update", "/member/myInfo", "/member/info/**",
+                    "/member/withdrawal",
+                    "/music/search", "/music/list/**",
+                    "/music/playList/**", "/post/create", "/post/**/delete", "/post/**/update",
+                    "/post/myPost", "/post/list/**/like",
+                    "/post/list/**/comment/**").hasRole("USER")
+                .requestMatchers("/admin/**").hasRole("ADMIN"))
         .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(
             SessionCreationPolicy.STATELESS))
         .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class).build();

@@ -1,13 +1,13 @@
 package com.mymusiclist.backend.member.service;
 
 import com.mymusiclist.backend.member.dto.MemberDto;
+import com.mymusiclist.backend.member.dto.MemberInfoDto;
 import com.mymusiclist.backend.member.dto.TokenDto;
 import com.mymusiclist.backend.member.dto.request.LoginRequest;
 import com.mymusiclist.backend.member.dto.request.ResetRequest;
 import com.mymusiclist.backend.member.dto.request.SignUpRequest;
-import com.mymusiclist.backend.member.dto.request.TokenRequest;
 import com.mymusiclist.backend.member.dto.request.UpdateRequest;
-import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,11 +19,17 @@ public interface MemberService {
 
   TokenDto login(LoginRequest loginRequest);
 
-  void logout(TokenRequest tokenRequest);
+  void logout(HttpServletRequest request);
 
   String resetPassword(ResetRequest resetRequest);
 
   String passwordAuth(String email, String code, String resetPassword);
 
   MemberDto update(UpdateRequest updateRequest);
+
+  String withdrawal();
+
+  MemberDto myInfo();
+
+  MemberInfoDto memberInfo(String nickname);
 }

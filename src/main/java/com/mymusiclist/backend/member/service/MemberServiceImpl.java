@@ -14,11 +14,11 @@ import com.mymusiclist.backend.exception.impl.SuspendedMemberException;
 import com.mymusiclist.backend.exception.impl.WaitingMemberException;
 import com.mymusiclist.backend.member.domain.MemberEntity;
 import com.mymusiclist.backend.member.dto.MemberDto;
+import com.mymusiclist.backend.member.dto.MemberInfoDto;
 import com.mymusiclist.backend.member.dto.TokenDto;
 import com.mymusiclist.backend.member.dto.request.LoginRequest;
 import com.mymusiclist.backend.member.dto.request.ResetRequest;
 import com.mymusiclist.backend.member.dto.request.SignUpRequest;
-import com.mymusiclist.backend.member.dto.request.TokenRequest;
 import com.mymusiclist.backend.member.dto.request.UpdateRequest;
 import com.mymusiclist.backend.member.jwt.JwtTokenProvider;
 import com.mymusiclist.backend.member.repository.MemberRepository;
@@ -27,11 +27,12 @@ import com.mymusiclist.backend.post.domain.PostEntity;
 import com.mymusiclist.backend.post.repository.CommentRepository;
 import com.mymusiclist.backend.post.repository.PostRepository;
 import com.mymusiclist.backend.type.MemberStatus;
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -57,29 +58,52 @@ public class MemberServiceImpl implements MemberService {
   private final RedisTemplate redisTemplate;
   private final PostRepository postRepository;
   private final CommentRepository commentRepository;
-  private TokenService tokenService;
+  private final TokenService tokenService;
 
   @Override
   @Transactional
   public String signUp(SignUpRequest signUpRequest) {
 
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(signUpRequest.getEmail());
-    if (byEmail.isPresent()) {
-      throw new DuplicateEmailException();
+    if (!isValidEmail(signUpRequest.getEmail())) {
+      throw new InvalidEmailException();
     }
 
     if (!signUpRequest.getPassword().equals(signUpRequest.getCheckPassword())) {
       throw new InvalidPasswordConfirmationException();
     }
 
-    if (!isValidEmail(signUpRequest.getEmail())) {
-      throw new InvalidEmailException();
-    }
-
     Optional<MemberEntity> byNickname = memberRepository.findByNickname(
         signUpRequest.getNickname());
     if (byNickname.isPresent()) {
-      throw new DuplicateNicknameException();
+      MemberEntity member = byNickname.get();
+      if (member.getStatus().equals(MemberStatus.ACTIVE)) {
+        throw new DuplicateNicknameException();
+      }
+    }
+
+    Optional<MemberEntity> byEmail = memberRepository.findByEmail(signUpRequest.getEmail());
+    if (byEmail.isPresent()) {
+      MemberEntity member = byEmail.get();
+      // 탈퇴한 회원이 다시 가입할 시
+      if (!member.getStatus().equals(MemberStatus.WITHDRAWN)) {
+        throw new DuplicateEmailException();
+      } else {
+        MemberEntity memberEntity = SignUpRequest.reSignUpInput(member, signUpRequest);
+        memberRepository.save(memberEntity);
+
+        // 새로 가입하는 계정의 닉네임 정보로 탈퇴할때 탈퇴한 회원으로 닉네임 변경이 처리된 게시글, 댓글의 닉네임 변경
+        updateNicknameInPostsAndComments(member, signUpRequest.getNickname());
+
+        String email = signUpRequest.getEmail();
+        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        String title = "MyMusicList 회원인증";
+        String message = "<h3>MyMusicList 회원가입에 성공했습니다. 아래의 링크를 클릭하셔서 회원인증을 완료해주세요.</h3>" +
+            "<div><a href='" + baseUrl + "/member/auth?email=" + email + "&code="
+            + memberEntity.getAuthCode() + "'> 인증 링크 </a></div>";
+        mailComponents.sendMail(email, title, message);
+
+        return "가입한 이메일을 확인해 회원인증을 진행해주세요.";
+      }
     }
 
     MemberEntity memberEntity = SignUpRequest.signUpInput(signUpRequest);
@@ -95,6 +119,7 @@ public class MemberServiceImpl implements MemberService {
 
     return "가입한 이메일을 확인해 회원인증을 진행해주세요.";
   }
+
 
   @Override
   @Transactional
@@ -145,16 +170,21 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  public void logout(TokenRequest tokenRequest) {
+  public void logout(HttpServletRequest request) {
+
+    String accessToken = request.getHeader("Authorization");
+    if (accessToken != null && accessToken.startsWith("Bearer ")) {
+      accessToken = accessToken.substring(7); // "Bearer " 이후의 토큰 값만 추출
+      System.out.println("AccessToken: " + accessToken);
+    }
 
     // 로그아웃 하고 싶은 토큰이 유효한지 검증
-    if (!jwtTokenProvider.validateToken(tokenRequest.getAccessToken())) {
+    if (!jwtTokenProvider.validateToken(accessToken)) {
       throw new InvalidTokenException();
     }
 
     // 토큰을 통해 사용자 정보르 받아오기
-    Authentication authentication = jwtTokenProvider.getAuthentication(
-        tokenRequest.getAccessToken());
+    Authentication authentication = jwtTokenProvider.getAuthentication(accessToken);
 
     // Redis에서 해당 유저의 email로 저장된 RefreshToken이 있는지 확인 후 있을 경우 삭제
     if (redisTemplate.opsForValue().get("RT:" + authentication.getName()) != null) {
@@ -162,11 +192,11 @@ public class MemberServiceImpl implements MemberService {
     }
 
     // 해당 Access Token 유효시간을 가지고 와서 BlackList에 저장하기
-    long expiration = jwtTokenProvider.getExpiration(tokenRequest.getAccessToken());
+    long expiration = jwtTokenProvider.getExpiration(accessToken);
     long now = (new Date()).getTime();
     long accessTokenExpiresIn = expiration - now;
     redisTemplate.opsForValue()
-        .set(tokenRequest.getAccessToken(), "logout", accessTokenExpiresIn, TimeUnit.MILLISECONDS);
+        .set(accessToken, "logout", accessTokenExpiresIn, TimeUnit.MILLISECONDS);
   }
 
   @Override
@@ -245,7 +275,10 @@ public class MemberServiceImpl implements MemberService {
     Optional<MemberEntity> byNickname = memberRepository.findByNickname(
         updateRequest.getNickname());
     if (byNickname.isPresent()) {
-      throw new DuplicateNicknameException();
+      MemberEntity member = byNickname.get();
+      if (member.getStatus().equals(MemberStatus.ACTIVE)) {
+        throw new DuplicateNicknameException();
+      }
     }
 
     MemberEntity member = byEmail.get();
@@ -263,6 +296,62 @@ public class MemberServiceImpl implements MemberService {
     memberRepository.save(memberEntity);
 
     return MemberDto.of(memberEntity);
+  }
+
+  @Override
+  public String withdrawal() {
+
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    String email = authentication.getName();
+    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
+    if (byEmail.isEmpty()) {
+      throw new NotFoundMemberException();
+    }
+    MemberEntity member = byEmail.get();
+
+    MemberEntity memberEntity = member.toBuilder()
+        .nickname("탈퇴한 회원 " + member.getNickname())
+        .status(MemberStatus.WITHDRAWN)
+        .build();
+    memberRepository.save(memberEntity);
+
+    // 탈퇴하는 회원이 작성한 게시글과, 댓글의 닉네임을 탈퇴한 회원으로 변경
+    updateNicknameInPostsAndComments(member, "탈퇴한 회원");
+
+    return "회원탈퇴가 정상적으로 완료되었습니다.";
+  }
+
+  @Override
+  public MemberDto myInfo() {
+
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    String email = authentication.getName();
+    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
+    if (byEmail.isEmpty()) {
+      throw new NotFoundMemberException();
+    }
+    MemberEntity member = byEmail.get();
+
+    return MemberDto.of(member);
+  }
+
+  @Override
+  public MemberInfoDto memberInfo(String nickname) {
+
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    String email = authentication.getName();
+    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
+    if (byEmail.isEmpty()) {
+      throw new NotFoundMemberException();
+    }
+
+    Optional<MemberEntity> byNickname = memberRepository.findByNickname(nickname);
+    if (byNickname.isEmpty()) {
+      throw new NotFoundMemberException();
+    }
+    MemberEntity member = byNickname.get();
+
+    return MemberInfoDto.of(member);
   }
 
   @Transactional

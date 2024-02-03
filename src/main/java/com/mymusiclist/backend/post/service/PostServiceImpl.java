@@ -63,12 +63,15 @@ public class PostServiceImpl implements PostService {
     }
     MemberEntity member = byEmail.get();
 
-    Optional<MyMusicListEntity> byMemberIdAndListName = myMusicListRepository.findByMemberIdAndListName(
-        member, postRequest.getListName());
-    if (byMemberIdAndListName.isEmpty()) {
-      throw new NotFoundMusicListException();
+    MyMusicListEntity myMusicList = null;
+    if (postRequest.getListName() != null && !postRequest.getListName().isEmpty()) {
+      Optional<MyMusicListEntity> byMemberIdAndListName = myMusicListRepository.findByMemberIdAndListName(
+          member, postRequest.getListName());
+      if (byMemberIdAndListName.isEmpty()) {
+        throw new NotFoundMusicListException();
+      }
+      myMusicList = byMemberIdAndListName.get();
     }
-    MyMusicListEntity myMusicList = byMemberIdAndListName.get();
 
     PostEntity postEntity = PostEntity.builder()
         .title(postRequest.getTitle())
