@@ -7,10 +7,11 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum SearchOption {
 
-  TITLE("title"),
-  CONTENT("content"),
-  TITLE_AND_CONTENT("titleAndContent"),
-  NICKNAME("nickname");
+  TITLE("title"), // 게시글 제목
+  CONTENT("content"), // 게시글 내용
+  TITLE_AND_CONTENT("titleAndContent"), // 게시글 제목 또는 게시글 내용
+  NICKNAME("nickname"), // 닉네임
+  COMMENT("comment"); // 댓글 내용
 
   private final String value;
 }

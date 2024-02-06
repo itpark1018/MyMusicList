@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -94,37 +95,75 @@ public class PostServiceImpl implements PostService {
   public String update(Long postId, PostRequest postRequest) {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
 
-    Optional<PostEntity> byPostId = postRepository.findByPostId(postId);
-    if (byPostId.isEmpty()) {
-      throw new NotFoundPostException();
-    }
+    MemberEntity member = new MemberEntity();
+    PostEntity post = new PostEntity();
+    MyMusicListEntity myMusicList = null;
 
-    // 게시글 수정을 요청한 사용자 본인이 작성한 게시글인지 확인
-    Optional<PostEntity> byPostIdAndMemberId = postRepository.findByPostIdAndMemberId(postId,
-        member);
-    if (byPostIdAndMemberId.isEmpty()) {
-      throw new InvalidAuthException();
+    if (authentication.getAuthorities().stream()
+        .map(GrantedAuthority::getAuthority)
+        .anyMatch(role -> role.equals("ROLE_ADMIN"))) {
+      // admin 권한이 있을 때
+      Optional<PostEntity> byPostId = postRepository.findByPostId(postId);
+      if (byPostId.isEmpty()) {
+        throw new NotFoundPostException();
+      }
+      post = byPostId.get();
+
+      // musicList 확인
+      Long memberId = post.getMemberId().getMemberId();
+      Optional<MemberEntity> byMemberId = memberRepository.findByMemberId(memberId);
+      if (byMemberId.isEmpty()) {
+        throw new NotFoundMemberException();
+      }
+      member = byMemberId.get();
+
+      if (postRequest.getListName() != null && !postRequest.getListName().isEmpty()) {
+        Optional<MyMusicListEntity> byMemberIdAndListName = myMusicListRepository.findByMemberIdAndListName(
+            member, postRequest.getListName());
+        if (byMemberIdAndListName.isEmpty()) {
+          throw new NotFoundMusicListException();
+        }
+        myMusicList = byMemberIdAndListName.get();
+      }
+
+    } else {
+      // admin 권한이 없을 때
+      String email = authentication.getName();
+      Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
+      if (byEmail.isEmpty()) {
+        throw new NotFoundMemberException();
+      }
+      member = byEmail.get();
+
+      Optional<PostEntity> byPostId = postRepository.findByPostId(postId);
+      if (byPostId.isEmpty()) {
+        throw new NotFoundPostException();
+      }
+
+      // 게시글 수정을 요청한 사용자 본인이 작성한 게시글인지 확인
+      Optional<PostEntity> byPostIdAndMemberId = postRepository.findByPostIdAndMemberId(postId,
+          member);
+      if (byPostIdAndMemberId.isEmpty()) {
+        throw new InvalidAuthException();
+      }
+      post = byPostIdAndMemberId.get();
+
+      // musicList가 해당 회원에게 있는지 확인
+      if (postRequest.getListName() != null && !postRequest.getListName().isEmpty()) {
+        Optional<MyMusicListEntity> byMemberIdAndListName = myMusicListRepository.findByMemberIdAndListName(
+            member, postRequest.getListName());
+        if (byMemberIdAndListName.isEmpty()) {
+          throw new NotFoundMusicListException();
+        }
+        myMusicList = byMemberIdAndListName.get();
+      }
     }
-    PostEntity post = byPostIdAndMemberId.get();
 
     // 삭제되어있는 게시글일 경우
     if (post.getStatus().equals(PostStatus.DELETED)) {
       throw new DeletePostException();
     }
-
-    Optional<MyMusicListEntity> byMemberIdAndListName = myMusicListRepository.findByMemberIdAndListName(
-        member, postRequest.getListName());
-    if (byMemberIdAndListName.isEmpty()) {
-      throw new NotFoundMusicListException();
-    }
-    MyMusicListEntity myMusicList = byMemberIdAndListName.get();
 
     PostEntity postEntity = post.toBuilder()
         .title(postRequest.getTitle())
@@ -142,19 +181,35 @@ public class PostServiceImpl implements PostService {
   public String delete(Long postId) {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
 
-    Optional<PostEntity> byPostIdAndMemberId = postRepository.findByPostIdAndMemberId(postId,
-        member);
-    if (byPostIdAndMemberId.isEmpty()) {
-      throw new NotFoundPostException();
+    MemberEntity member = new MemberEntity();
+    PostEntity post = new PostEntity();
+
+    if (authentication.getAuthorities().stream()
+        .map(GrantedAuthority::getAuthority)
+        .anyMatch(role -> role.equals("ROLE_ADMIN"))) {
+      // admin 권한이 있을 때
+      Optional<PostEntity> byPostId = postRepository.findByPostId(postId);
+      if (byPostId.isEmpty()) {
+        throw new NotFoundPostException();
+      }
+      post = byPostId.get();
+    } else {
+      // admin 권한이 없을 때
+      String email = authentication.getName();
+      Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
+      if (byEmail.isEmpty()) {
+        throw new NotFoundMemberException();
+      }
+      member = byEmail.get();
+
+      Optional<PostEntity> byPostIdAndMemberId = postRepository.findByPostIdAndMemberId(postId,
+          member);
+      if (byPostIdAndMemberId.isEmpty()) {
+        throw new NotFoundPostException();
+      }
+      post = byPostIdAndMemberId.get();
     }
-    PostEntity post = byPostIdAndMemberId.get();
 
     // 이미 삭제되어있는 게시글일 경우
     if (post.getStatus().equals(PostStatus.DELETED)) {
@@ -163,6 +218,7 @@ public class PostServiceImpl implements PostService {
 
     PostEntity deletePost = post.toBuilder()
         .status(PostStatus.DELETED)
+        .deleteDate(LocalDateTime.now())
         .build();
     postRepository.save(deletePost);
 
@@ -172,6 +228,7 @@ public class PostServiceImpl implements PostService {
         .map(commentEntity -> {
           CommentEntity updatedComment = commentEntity.toBuilder()
               .status(CommentStatus.DELETED)
+              .deleteDate(LocalDateTime.now())
               .build();
           return updatedComment;
         })
@@ -199,20 +256,7 @@ public class PostServiceImpl implements PostService {
       posts = postRepository.findByStatusOrderByCreateDateDesc(PostStatus.ACTIVE);
     }
 
-    List<PostListDto> postList = posts.stream()
-        .map(post -> {
-          PostListDto postListDto = new PostListDto();
-          postListDto.setPostId(post.getPostId());
-          postListDto.setTitle(post.getTitle());
-          postListDto.setNickName(post.getNickname());
-          postListDto.setCreateDate(post.getCreateDate());
-          postListDto.setLikeCnt(post.getLikeCnt());
-          postListDto.setCommentCnt(post.getCommentCnt());
-          return postListDto;
-        })
-        .collect(Collectors.toList());
-
-    return postList;
+    return PostListDto.listOf(posts);
   }
 
   @Override
@@ -258,20 +302,8 @@ public class PostServiceImpl implements PostService {
 
     List<PostEntity> posts = postRepository.findByMemberIdAndStatus(member,
         PostStatus.ACTIVE);
-    List<PostListDto> postList = posts.stream()
-        .map(post -> {
-          PostListDto postListDto = new PostListDto();
-          postListDto.setPostId(post.getPostId());
-          postListDto.setTitle(post.getTitle());
-          postListDto.setNickName(post.getNickname());
-          postListDto.setCreateDate(post.getCreateDate());
-          postListDto.setLikeCnt(post.getLikeCnt());
-          postListDto.setCommentCnt(post.getCommentCnt());
-          return postListDto;
-        })
-        .collect(Collectors.toList());
 
-    return postList;
+    return PostListDto.listOf(posts);
   }
 
   @Override
@@ -345,19 +377,6 @@ public class PostServiceImpl implements PostService {
       posts = postRepository.findByNicknameAndStatus(keyword, PostStatus.ACTIVE);
     }
 
-    List<PostListDto> postList = posts.stream()
-        .map(post -> {
-          PostListDto postListDto = new PostListDto();
-          postListDto.setPostId(post.getPostId());
-          postListDto.setTitle(post.getTitle());
-          postListDto.setNickName(post.getNickname());
-          postListDto.setCreateDate(post.getCreateDate());
-          postListDto.setLikeCnt(post.getLikeCnt());
-          postListDto.setCommentCnt(post.getCommentCnt());
-          return postListDto;
-        })
-        .collect(Collectors.toList());
-
-    return postList;
+    return PostListDto.listOf(posts);
   }
 }
