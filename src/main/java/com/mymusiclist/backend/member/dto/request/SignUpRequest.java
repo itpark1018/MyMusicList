@@ -39,7 +39,7 @@ public class SignUpRequest {
         .auth(false).authCode(uuid)
         .imageUrl(signUpRequest.getImageUrl())
         .introduction(signUpRequest.getIntroduction())
-        .status(MemberStatus.WAITING_FOR_APPROVAL.getDescription())
+        .status(MemberStatus.WAITING_FOR_APPROVAL)
         .adminYn(false)
         .build();
   }

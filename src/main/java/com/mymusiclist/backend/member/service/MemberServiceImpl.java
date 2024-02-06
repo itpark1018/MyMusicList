@@ -14,6 +14,7 @@ import com.mymusiclist.backend.exception.impl.SuspendedMemberException;
 import com.mymusiclist.backend.exception.impl.WaitingMemberException;
 import com.mymusiclist.backend.member.domain.MemberEntity;
 import com.mymusiclist.backend.member.dto.MemberDto;
+import com.mymusiclist.backend.member.dto.TokenDto;
 import com.mymusiclist.backend.member.dto.request.LoginRequest;
 import com.mymusiclist.backend.member.dto.request.ResetRequest;
 import com.mymusiclist.backend.member.dto.request.SignUpRequest;
@@ -65,6 +66,7 @@ public class MemberServiceImpl implements MemberService {
   private final RedisTemplate redisTemplate;
   private final PostRepository postRepository;
   private final CommentRepository commentRepository;
+  private final TokenService tokenService;
 
   @Override
   @Transactional
@@ -119,7 +121,7 @@ public class MemberServiceImpl implements MemberService {
 
     MemberEntity memberEntity = member.toBuilder()
         .auth(true)
-        .status(MemberStatus.ACTIVE.getDescription())
+        .status(MemberStatus.ACTIVE)
         .build();
     memberRepository.save(memberEntity);
 
@@ -127,7 +129,7 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  public Map<String, String> login(LoginRequest loginRequest) {
+  public TokenDto login(LoginRequest loginRequest) {
 
     Optional<MemberEntity> byEmail = memberRepository.findByEmail(loginRequest.getEmail());
     if (byEmail.isEmpty()) {
@@ -135,26 +137,16 @@ public class MemberServiceImpl implements MemberService {
     }
 
     MemberEntity member = byEmail.get();
-    if (member.getStatus().equals(MemberStatus.SUSPENDED.getDescription())) {
+    if (member.getStatus().equals(MemberStatus.SUSPENDED)) {
       throw new SuspendedMemberException();
-    } else if (member.getStatus().equals(MemberStatus.WAITING_FOR_APPROVAL.getDescription())) {
+    } else if (member.getStatus().equals(MemberStatus.WAITING_FOR_APPROVAL)) {
       throw new WaitingMemberException();
     }
 
     // 패스워드 검증
     if (passwordEncoder.matches(loginRequest.getPassword(), member.getPassword())) {
       // AccessToken 및 RefreshToken 생성
-      Map<String, String> token = jwtTokenProvider.createTokens(member.getEmail(),
-          member.getAdminYn());
-
-      // Redis에 RefreshToken 저장
-      String refreshToken = token.get("refreshToken");
-      long refreshTokenExpiresIn = 86400000;
-
-      redisTemplate.opsForValue()
-          .set("RT:" + member.getEmail(), refreshToken, refreshTokenExpiresIn,
-              TimeUnit.MILLISECONDS);
-
+      TokenDto token = tokenService.create(member.getEmail(), member.getAdminYn());
       return token;
     } else {
       throw new InvalidPasswordException();

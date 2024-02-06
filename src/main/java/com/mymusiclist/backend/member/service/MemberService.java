@@ -1,6 +1,7 @@
 package com.mymusiclist.backend.member.service;
 
 import com.mymusiclist.backend.member.dto.MemberDto;
+import com.mymusiclist.backend.member.dto.TokenDto;
 import com.mymusiclist.backend.member.dto.request.LoginRequest;
 import com.mymusiclist.backend.member.dto.request.ResetRequest;
 import com.mymusiclist.backend.member.dto.request.SignUpRequest;
@@ -18,7 +19,7 @@ public interface MemberService {
 
   String auth(String email, String code);
 
-  Map<String, String> login(LoginRequest loginRequest);
+  TokenDto login(LoginRequest loginRequest);
 
   void logout(TokenRequest tokenRequest);
 

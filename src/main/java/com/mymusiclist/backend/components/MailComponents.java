@@ -1,6 +1,7 @@
 package com.mymusiclist.backend.components;
 
 
+import com.mymusiclist.backend.exception.impl.MailSendException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +25,7 @@ public class MailComponents {
             mimeMessageHelper.setText(text, true);
 
         } catch (MessagingException e) {
-
-            throw new RuntimeException(e);
+            throw new MailSendException();
         }
 
         javaMailSender.send(message);

@@ -1,5 +1,7 @@
 package com.mymusiclist.backend.post.service;
 
+import com.mymusiclist.backend.exception.impl.DeleteCommentException;
+import com.mymusiclist.backend.exception.impl.DeletePostException;
 import com.mymusiclist.backend.exception.impl.NotFoundCommentException;
 import com.mymusiclist.backend.exception.impl.NotFoundMemberException;
 import com.mymusiclist.backend.exception.impl.NotFoundPostException;
@@ -38,7 +40,7 @@ public class CommentServiceImpl implements CommentService {
   public List<CommentDto> getList(PostEntity postEntity) {
 
     List<CommentEntity> commentList = commentRepository.findByPostIdAndStatusOrderByCreateDateDesc(
-        postEntity, CommentStatus.ACTIVE.getDescription());
+        postEntity, CommentStatus.ACTIVE);
 
     return CommentDto.listOf(commentList);
   }
@@ -61,16 +63,25 @@ public class CommentServiceImpl implements CommentService {
     }
     PostEntity post = byPostId.get();
 
+    if (post.getStatus().equals(PostStatus.DELETED)) {
+      throw new DeletePostException();
+    }
+
     CommentEntity commentEntity = CommentEntity.builder()
         .postId(post)
         .memberId(member)
         .nickname(member.getNickname())
         .comment(commentRequest.getComment())
         .likeCnt(0)
-        .status(CommentStatus.ACTIVE.getDescription())
+        .status(CommentStatus.ACTIVE)
         .createDate(LocalDateTime.now())
         .build();
     commentRepository.save(commentEntity);
+
+    PostEntity postEntity = post.toBuilder()
+        .commentCnt(post.getCommentCnt() + 1)
+        .build();
+    postRepository.save(postEntity);
 
     return "댓글 작성완료.";
   }
@@ -87,28 +98,40 @@ public class CommentServiceImpl implements CommentService {
     }
     MemberEntity member = byEmail.get();
 
-    Optional<PostEntity> byPostIdAndStatus = postRepository.findByPostIdAndStatus(postId,
-        PostStatus.ACTIVE.getDescription());
+    Optional<PostEntity> byPostIdAndStatus = postRepository.findByPostId(postId);
     if (byPostIdAndStatus.isEmpty()) {
       throw new NotFoundPostException();
     }
     PostEntity post = byPostIdAndStatus.get();
 
-    Optional<CommentEntity> byComment = commentRepository.findByMemberIdAndPostIdAndCommentIdAndStatus(
-        member, post, commentId, CommentStatus.ACTIVE.getDescription());
+    if (post.getStatus().equals(PostStatus.DELETED)) {
+      throw new DeletePostException();
+    }
+
+    Optional<CommentEntity> byComment = commentRepository.findByMemberIdAndPostIdAndCommentId(
+        member, post, commentId);
     if (byComment.isEmpty()) {
       throw new NotFoundCommentException();
     }
     CommentEntity comment = byComment.get();
 
+    if (comment.getStatus().equals(CommentStatus.DELETED)) {
+      throw new DeleteCommentException();
+    }
+
     CommentEntity commentEntity = comment.toBuilder()
-        .status(CommentStatus.DELETED.getDescription())
+        .status(CommentStatus.DELETED)
         .build();
     commentRepository.save(commentEntity);
 
     // 댓글 삭제 시 해당 댓글의 추천(좋아요)도 같이 삭제
     List<CommentLikeEntity> deleteLikes = commentLikeRepository.findByCommentId(comment);
     commentLikeRepository.deleteAll(deleteLikes);
+
+    PostEntity postEntity = post.toBuilder()
+        .commentCnt(post.getCommentCnt() - 1)
+        .build();
+    postRepository.save(postEntity);
 
     return "댓글 삭제완료";
   }
@@ -125,19 +148,26 @@ public class CommentServiceImpl implements CommentService {
     }
     MemberEntity member = byEmail.get();
 
-    Optional<PostEntity> byPostIdAndStatus = postRepository.findByPostIdAndStatus(postId,
-        PostStatus.ACTIVE.getDescription());
-    if (byPostIdAndStatus.isEmpty()) {
+    Optional<PostEntity> byPostI = postRepository.findByPostId(postId);
+    if (byPostI.isEmpty()) {
       throw new NotFoundPostException();
     }
-    PostEntity post = byPostIdAndStatus.get();
+    PostEntity post = byPostI.get();
 
-    Optional<CommentEntity> byComment = commentRepository.findByMemberIdAndPostIdAndCommentIdAndStatus(
-        member, post, commentId, CommentStatus.ACTIVE.getDescription());
+    if (post.getStatus().equals(PostStatus.DELETED)) {
+      throw new DeletePostException();
+    }
+
+    Optional<CommentEntity> byComment = commentRepository.findByMemberIdAndPostIdAndCommentId(
+        member, post, commentId);
     if (byComment.isEmpty()) {
       throw new NotFoundCommentException();
     }
     CommentEntity comment = byComment.get();
+
+    if (comment.getStatus().equals(CommentStatus.DELETED)) {
+      throw new DeleteCommentException();
+    }
 
     CommentEntity commentEntity = comment.toBuilder()
         .comment(commentRequest.getComment())
@@ -160,12 +190,15 @@ public class CommentServiceImpl implements CommentService {
     }
     MemberEntity member = byEmail.get();
 
-    Optional<PostEntity> byPostIdAndStatus = postRepository.findByPostIdAndStatus(postId,
-        PostStatus.ACTIVE.getDescription());
+    Optional<PostEntity> byPostIdAndStatus = postRepository.findByPostId(postId);
     if (byPostIdAndStatus.isEmpty()) {
       throw new NotFoundPostException();
     }
     PostEntity post = byPostIdAndStatus.get();
+
+    if (post.getStatus().equals(PostStatus.DELETED)) {
+      throw new DeletePostException();
+    }
 
     Optional<CommentEntity> byPostIdAndCommentId = commentRepository.findByPostIdAndCommentId(post,
         commentId);
@@ -173,6 +206,10 @@ public class CommentServiceImpl implements CommentService {
       throw new NotFoundCommentException();
     }
     CommentEntity comment = byPostIdAndCommentId.get();
+
+    if (comment.getStatus().equals(CommentStatus.DELETED)) {
+      throw new DeleteCommentException();
+    }
 
     // 댓글 추천 요청이 왔을 때 추천한 적이 없으면 해당 댓들에 추천개수가 +1이 되고 DB에 저장
     // 댓글 추천 요청이 왔을 때 이미 추천한 적이 있으면 해당 댓들에 추천개수가 -1이 되고 DB에 저장
@@ -213,7 +250,7 @@ public class CommentServiceImpl implements CommentService {
     MemberEntity member = byEmail.get();
 
     List<CommentEntity> commentList = commentRepository.findAllByMemberIdAndStatus(member,
-        CommentStatus.ACTIVE.getDescription());
+        CommentStatus.ACTIVE);
 
     return MyCommentDto.listOf(commentList);
   }

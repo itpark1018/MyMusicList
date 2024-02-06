@@ -44,7 +44,7 @@ public class MusicController {
   }
 
   @PostMapping("/list/{listName}/update")
-  public ResponseEntity<MyMusicListDto> updateList(@PathVariable String listName,
+  public ResponseEntity<MyMusicListDto> updateList(@PathVariable(name = "listName") String listName,
       @RequestBody UpdateRequest updateRequest) {
     MyMusicListDto response = musicService.updateList(listName, updateRequest);
     return ResponseEntity.ok(response);
@@ -57,20 +57,21 @@ public class MusicController {
   }
 
   @GetMapping("/list/{listName}/detail")
-  public ResponseEntity<MyMusicListDto> detail(@PathVariable String listName) {
+  public ResponseEntity<MyMusicListDto> detail(@PathVariable(name = "listName") String listName) {
     MyMusicListDto response = musicService.detail(listName);
     return ResponseEntity.ok(response);
   }
 
   @PostMapping("list/{listName}/add")
-  public ResponseEntity<String> addMusic(@PathVariable String listName,
+  public ResponseEntity<String> addMusic(@PathVariable(name = "listName") String listName,
       @RequestBody AddRequest addRequest) {
     String response = musicService.addMusic(listName, addRequest);
     return ResponseEntity.ok(response);
   }
 
   @PostMapping("/playList/{listName}")
-  public ResponseEntity<List<PlayListDto>> playList(@PathVariable String listName,
+  public ResponseEntity<List<PlayListDto>> playList(
+      @PathVariable(name = "listName") String listName,
       @RequestParam(name = "repeatPlay") Boolean repeatPlay,
       @RequestParam(name = "randomPlay") Boolean randomPlay) {
     List<PlayListDto> response = musicService.playList(listName, repeatPlay, randomPlay);

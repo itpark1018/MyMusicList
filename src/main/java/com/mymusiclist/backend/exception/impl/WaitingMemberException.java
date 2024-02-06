@@ -6,8 +6,13 @@ import org.springframework.http.HttpStatus;
 public class WaitingMemberException extends AbstractException {
 
   @Override
-  public int getStatusCode() {
-    return HttpStatus.BAD_REQUEST.value();
+  public HttpStatus getHttpStatus() {
+    return HttpStatus.BAD_REQUEST;
+  }
+
+  @Override
+  public String getErrorCode() {
+    return "WAITING_MEMBER";
   }
 
   @Override

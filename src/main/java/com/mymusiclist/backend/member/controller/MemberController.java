@@ -1,6 +1,7 @@
 package com.mymusiclist.backend.member.controller;
 
 import com.mymusiclist.backend.member.dto.MemberDto;
+import com.mymusiclist.backend.member.dto.TokenDto;
 import com.mymusiclist.backend.member.dto.request.LoginRequest;
 import com.mymusiclist.backend.member.dto.request.ResetRequest;
 import com.mymusiclist.backend.member.dto.request.SignUpRequest;
@@ -41,8 +42,8 @@ public class MemberController {
   }
 
   @PostMapping("/login")
-  public ResponseEntity<Map<String, String>> login(@RequestBody LoginRequest loginRequest) {
-    Map<String, String> response = memberService.login(loginRequest);
+  public ResponseEntity<TokenDto> login(@RequestBody LoginRequest loginRequest) {
+    TokenDto response = memberService.login(loginRequest);
     return ResponseEntity.ok(response);
   }
 
@@ -52,8 +53,8 @@ public class MemberController {
   }
 
   @PostMapping("/reissue")
-  public ResponseEntity<Map<String, String>> reIssue(@RequestBody TokenRequest TokenRequest) {
-    Map<String, String> response = tokenService.reIssue(TokenRequest.getRefreshToken());
+  public ResponseEntity<TokenDto> reIssue(@RequestBody TokenRequest TokenRequest) {
+    TokenDto response = tokenService.reIssue(TokenRequest.getRefreshToken());
     return ResponseEntity.ok(response);
   }
 

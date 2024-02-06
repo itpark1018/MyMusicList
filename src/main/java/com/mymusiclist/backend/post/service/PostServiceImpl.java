@@ -78,7 +78,7 @@ public class PostServiceImpl implements PostService {
         .listId(myMusicList)
         .likeCnt(0)
         .commentCnt(0)
-        .status(PostStatus.ACTIVE.getDescription())
+        .status(PostStatus.ACTIVE)
         .createDate(LocalDateTime.now())
         .build();
     postRepository.save(postEntity);
@@ -104,14 +104,15 @@ public class PostServiceImpl implements PostService {
     }
 
     // 게시글 수정을 요청한 사용자 본인이 작성한 게시글인지 확인
-    Optional<PostEntity> byPostIdAndMemberId = postRepository.findByPostIdAndMemberId(postId, member);
+    Optional<PostEntity> byPostIdAndMemberId = postRepository.findByPostIdAndMemberId(postId,
+        member);
     if (byPostIdAndMemberId.isEmpty()) {
       throw new InvalidAuthException();
     }
     PostEntity post = byPostIdAndMemberId.get();
 
     // 삭제되어있는 게시글일 경우
-    if (post.getStatus().equals(PostStatus.DELETED.getDescription())) {
+    if (post.getStatus().equals(PostStatus.DELETED)) {
       throw new DeletePostException();
     }
 
@@ -145,19 +146,20 @@ public class PostServiceImpl implements PostService {
     }
     MemberEntity member = byEmail.get();
 
-    Optional<PostEntity> byPostIdAndMemberId = postRepository.findByPostIdAndMemberId(postId, member);
+    Optional<PostEntity> byPostIdAndMemberId = postRepository.findByPostIdAndMemberId(postId,
+        member);
     if (byPostIdAndMemberId.isEmpty()) {
       throw new NotFoundPostException();
     }
     PostEntity post = byPostIdAndMemberId.get();
 
     // 이미 삭제되어있는 게시글일 경우
-    if (post.getStatus().equals(PostStatus.DELETED.getDescription())) {
+    if (post.getStatus().equals(PostStatus.DELETED)) {
       throw new DeletePostException();
     }
 
     PostEntity deletePost = post.toBuilder()
-        .status(PostStatus.DELETED.getDescription())
+        .status(PostStatus.DELETED)
         .build();
     postRepository.save(deletePost);
 
@@ -166,7 +168,7 @@ public class PostServiceImpl implements PostService {
     List<CommentEntity> deleteComments = commentEntityList.stream()
         .map(commentEntity -> {
           CommentEntity updatedComment = commentEntity.toBuilder()
-              .status(CommentStatus.DELETED.getDescription())
+              .status(CommentStatus.DELETED)
               .build();
           return updatedComment;
         })
@@ -189,9 +191,9 @@ public class PostServiceImpl implements PostService {
     List<PostEntity> posts;
 
     if (sortByLikes) {
-      posts = postRepository.findByStatusOrderByLikeCntDesc(PostStatus.ACTIVE.getDescription());
+      posts = postRepository.findByStatusOrderByLikeCntDesc(PostStatus.ACTIVE);
     } else {
-      posts = postRepository.findByStatusOrderByCreateDateDesc(PostStatus.ACTIVE.getDescription());
+      posts = postRepository.findByStatusOrderByCreateDateDesc(PostStatus.ACTIVE);
     }
 
     List<PostListDto> postList = posts.stream()
@@ -218,7 +220,7 @@ public class PostServiceImpl implements PostService {
       throw new NotFoundPostException();
     }
     PostEntity post = byPostId.get();
-    if (post.getStatus().equals(PostStatus.DELETED.getDescription())) {
+    if (post.getStatus().equals(PostStatus.DELETED)) {
       throw new DeletePostException();
     }
 
@@ -252,7 +254,7 @@ public class PostServiceImpl implements PostService {
     MemberEntity member = byEmail.get();
 
     List<PostEntity> posts = postRepository.findByMemberIdAndStatus(member,
-        PostStatus.ACTIVE.getDescription());
+        PostStatus.ACTIVE);
     List<PostListDto> postList = posts.stream()
         .map(post -> {
           PostListDto postListDto = new PostListDto();
@@ -286,6 +288,10 @@ public class PostServiceImpl implements PostService {
       throw new NotFoundPostException();
     }
     PostEntity post = byPostId.get();
+
+    if (post.getStatus().equals(PostStatus.DELETED)) {
+      throw new DeletePostException();
+    }
 
     // 게시글 추천 요청이 왔을 때 추천한 적이 없으면 게시글의 추천개수가 1개 늘어나고 게시글 추천 DB에 데이터가 저장
     // 반대로 이미 추천한 게시글일 경우 추천이 취소되면서 게시글의 추천개수가 1개 줄어들고 게시글 추천 DB에서 데이터가 삭제
@@ -322,18 +328,18 @@ public class PostServiceImpl implements PostService {
     if (searchOption.equals(SearchOption.TITLE.getValue())) {
       // 제목에서 키워드를 포함하는 게시물 검색
       posts = postRepository.findByTitleContainingAndStatus(keyword,
-          PostStatus.ACTIVE.getDescription());
+          PostStatus.ACTIVE);
     } else if (searchOption.equals(SearchOption.CONTENT.getValue())) {
       // 내용에서 키워드를 포함하는 게시물 검색
       posts = postRepository.findByContentContainingAndStatus(keyword,
-          PostStatus.ACTIVE.getDescription());
+          PostStatus.ACTIVE);
     } else if (searchOption.equals(SearchOption.TITLE_AND_CONTENT.getValue())) {
       // 제목이나 내용에서 키워드를 포함하는 게시물 검색
       posts = postRepository.findByTitleContainingOrContentContainingAndStatus(keyword, keyword,
-          PostStatus.ACTIVE.getDescription());
+          PostStatus.ACTIVE);
     } else if (searchOption.equals(SearchOption.NICKNAME.getValue())) {
       // 닉네임으로 게시물 검색, 닉네임 검색은 닉네임이 정확해야 검색 가능.
-      posts = postRepository.findByNicknameAndStatus(keyword, PostStatus.ACTIVE.getDescription());
+      posts = postRepository.findByNicknameAndStatus(keyword, PostStatus.ACTIVE);
     }
 
     List<PostListDto> postList = posts.stream()
@@ -351,5 +357,4 @@ public class PostServiceImpl implements PostService {
 
     return postList;
   }
-
 }

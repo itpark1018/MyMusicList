@@ -5,13 +5,11 @@ import com.mymusiclist.backend.member.dto.request.SignUpRequest;
 import com.mymusiclist.backend.member.dto.parameter.SignUpParameter;
 import com.mymusiclist.backend.type.MemberStatus;
 import java.time.LocalDateTime;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.security.crypto.bcrypt.BCrypt;
 
 @Getter
 @Setter

@@ -6,8 +6,13 @@ import org.springframework.http.HttpStatus;
 public class NotFoundPostException extends AbstractException {
 
   @Override
-  public int getStatusCode() {
-    return HttpStatus.NOT_FOUND.value();
+  public HttpStatus getHttpStatus() {
+    return HttpStatus.NOT_FOUND;
+  }
+
+  @Override
+  public String getErrorCode() {
+    return "POST_NOT_FOUND";
   }
 
   @Override

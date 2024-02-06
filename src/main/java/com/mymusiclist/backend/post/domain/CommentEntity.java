@@ -1,7 +1,10 @@
 package com.mymusiclist.backend.post.domain;
 
 import com.mymusiclist.backend.member.domain.MemberEntity;
+import com.mymusiclist.backend.type.CommentStatus;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -37,7 +40,10 @@ public class CommentEntity {
   private String nickname;
   private String comment;
   private Integer likeCnt;
-  private String status;
+
+  @Enumerated(EnumType.STRING)
+  private CommentStatus status;
+
   private LocalDateTime createDate;
   private LocalDateTime modDate;
   private LocalDateTime deleteDate;
