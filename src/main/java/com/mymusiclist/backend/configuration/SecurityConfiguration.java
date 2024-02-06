@@ -31,7 +31,7 @@ public class SecurityConfiguration {
                     "/post/list/**", "/post/search")
                 .permitAll()
                 .requestMatchers("/member/update", "/music/search", "/music/list/**",
-                    "/music/playList/**", "/post/**", "/post/list/**/like").hasRole("USER"))
+                    "/music/playList/**", "/post/**", "/post/list/**/like", "/post/list/**/comment/**").hasRole("USER"))
         .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(
             SessionCreationPolicy.STATELESS))
         .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class).build();

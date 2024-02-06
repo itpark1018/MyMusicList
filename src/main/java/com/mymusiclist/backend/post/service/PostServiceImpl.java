@@ -13,12 +13,14 @@ import com.mymusiclist.backend.music.dto.PlayListDto;
 import com.mymusiclist.backend.music.repository.MusicRepository;
 import com.mymusiclist.backend.music.repository.MyMusicListRepository;
 import com.mymusiclist.backend.post.domain.CommentEntity;
+import com.mymusiclist.backend.post.domain.CommentLikeEntity;
 import com.mymusiclist.backend.post.domain.PostEntity;
 import com.mymusiclist.backend.post.domain.PostLikeEntity;
 import com.mymusiclist.backend.post.dto.CommentDto;
 import com.mymusiclist.backend.post.dto.PostDetailDto;
 import com.mymusiclist.backend.post.dto.PostListDto;
 import com.mymusiclist.backend.post.dto.request.PostRequest;
+import com.mymusiclist.backend.post.repository.CommentLikeRepository;
 import com.mymusiclist.backend.post.repository.CommentRepository;
 import com.mymusiclist.backend.post.repository.PostLikeRepository;
 import com.mymusiclist.backend.post.repository.PostRepository;
@@ -47,6 +49,7 @@ public class PostServiceImpl implements PostService {
   private final MusicRepository musicRepository;
   private final CommentService commentService;
   private final PostLikeRepository postLikeRepository;
+  private final CommentLikeRepository commentLikeRepository;
 
   @Override
   @Transactional
@@ -169,6 +172,14 @@ public class PostServiceImpl implements PostService {
         })
         .collect(Collectors.toList());
     commentRepository.saveAll(deleteComments);
+
+    // 게시글이 처리되었으면 해당 게시글의 추천(좋아요)도 모두 삭제 처리해줘야한다.
+    List<PostLikeEntity> deletePostLikes = postLikeRepository.findByPostId(post);
+    postLikeRepository.deleteAll(deletePostLikes);
+
+    // 게시글이 처리되었으면 해당 게시글 모든 댓글의 추천(좋아요)도 모두 삭제 처리해줘야한다.
+    List<CommentLikeEntity> deleteCommentLikes = commentLikeRepository.findByPostId(post);
+    commentLikeRepository.deleteAll(deleteCommentLikes);
 
     return "해당 게시글이 삭제되었습니다.";
   }
