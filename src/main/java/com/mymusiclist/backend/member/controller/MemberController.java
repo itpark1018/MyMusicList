@@ -9,6 +9,8 @@ import com.mymusiclist.backend.member.dto.request.UpdateRequest;
 import com.mymusiclist.backend.member.service.MemberService;
 import com.mymusiclist.backend.member.service.TokenService;
 import java.util.Map;
+import com.mymusiclist.backend.member.dto.parameter.SignUpParameter;
+import com.mymusiclist.backend.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
