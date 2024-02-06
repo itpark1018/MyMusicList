@@ -36,7 +36,27 @@ public class SignUpRequest {
         .name(signUpRequest.getName())
         .nickname(signUpRequest.getNickname())
         .regDate(LocalDateTime.now())
-        .auth(false).authCode(uuid)
+        .auth(false)
+        .authCode(uuid)
+        .imageUrl(signUpRequest.getImageUrl())
+        .introduction(signUpRequest.getIntroduction())
+        .status(MemberStatus.WAITING_FOR_APPROVAL)
+        .adminYn(false)
+        .build();
+  }
+
+  public static MemberEntity reSignUpInput(MemberEntity member, SignUpRequest signUpRequest) {
+    String uuid = UUID.randomUUID().toString();
+    String encPassword = BCrypt.hashpw(signUpRequest.getPassword(), BCrypt.gensalt());
+
+    return member.toBuilder()
+        .email(signUpRequest.getEmail())
+        .password(encPassword)
+        .name(signUpRequest.getName())
+        .nickname(signUpRequest.getNickname())
+        .regDate(LocalDateTime.now())
+        .auth(false)
+        .authCode(uuid)
         .imageUrl(signUpRequest.getImageUrl())
         .introduction(signUpRequest.getIntroduction())
         .status(MemberStatus.WAITING_FOR_APPROVAL)

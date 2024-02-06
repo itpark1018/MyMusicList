@@ -1,6 +1,7 @@
 package com.mymusiclist.backend.member.controller;
 
 import com.mymusiclist.backend.member.dto.MemberDto;
+import com.mymusiclist.backend.member.dto.MemberInfoDto;
 import com.mymusiclist.backend.member.dto.TokenDto;
 import com.mymusiclist.backend.member.dto.request.LoginRequest;
 import com.mymusiclist.backend.member.dto.request.ResetRequest;
@@ -9,11 +10,14 @@ import com.mymusiclist.backend.member.dto.request.TokenRequest;
 import com.mymusiclist.backend.member.dto.request.UpdateRequest;
 import com.mymusiclist.backend.member.service.MemberService;
 import com.mymusiclist.backend.member.service.TokenService;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import com.mymusiclist.backend.member.dto.parameter.SignUpParameter;
 import com.mymusiclist.backend.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -48,8 +52,8 @@ public class MemberController {
   }
 
   @PostMapping("/logout")
-  public void logout(@RequestBody TokenRequest tokenRequest) {
-    memberService.logout(tokenRequest);
+  public void logout(HttpServletRequest request) {
+    memberService.logout(request);
   }
 
   @PostMapping("/reissue")
@@ -75,6 +79,25 @@ public class MemberController {
   @PostMapping("/update")
   public ResponseEntity<MemberDto> update(@RequestBody UpdateRequest updateRequest) {
     MemberDto response = memberService.update(updateRequest);
+    return ResponseEntity.ok(response);
+  }
+
+  @PostMapping("/withdrawal")
+  public ResponseEntity<String> withdrawal() {
+    String response = memberService.withdrawal();
+    return ResponseEntity.ok(response);
+  }
+
+  @GetMapping("/myInfo")
+  public ResponseEntity<MemberDto> myInfo() {
+    MemberDto response = memberService.myInfo();
+    return ResponseEntity.ok(response);
+  }
+
+  @GetMapping("/info/{nickname}")
+  public ResponseEntity<MemberInfoDto> memberInfo(
+      @PathVariable(name = "nickname") String nickname) {
+    MemberInfoDto response = memberService.memberInfo(nickname);
     return ResponseEntity.ok(response);
   }
 }
