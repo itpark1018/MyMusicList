@@ -30,6 +30,8 @@ public class MemberController {
   @PostMapping("/signup")
   public ResponseEntity<String> singUp(@RequestBody SignUpRequest signUpRequest) {
     String response = memberService.signUp(signUpRequest);
+    return ResponseEntity.ok(response);
+  }
 
   @PostMapping("/auth")
   public ResponseEntity<String> auth(@RequestParam(name = "email") String email,
