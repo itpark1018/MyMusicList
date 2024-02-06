@@ -5,12 +5,10 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum MemberStatus {
+public enum CommentStatus {
 
-  WAITING_FOR_APPROVAL("가입대기"),
-  ACTIVE("이용중"),
-  SUSPENDED("계정정지"),
-  WITHDRAWN("탈퇴");;
+  ACTIVE("게시"),
+  DELETED("삭제");
 
   private final String description;
 }
