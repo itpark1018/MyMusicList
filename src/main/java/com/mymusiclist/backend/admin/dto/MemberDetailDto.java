@@ -3,6 +3,8 @@ package com.mymusiclist.backend.admin.dto;
 import com.mymusiclist.backend.member.domain.MemberEntity;
 import com.mymusiclist.backend.type.MemberStatus;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -31,6 +33,13 @@ public class MemberDetailDto {
   private Boolean adminYn;
   private String passwordAuthCode;
   private LocalDateTime passwordDate;
+
+
+  public static List<MemberDetailDto> listOf(List<MemberEntity> memberEntities) {
+    return memberEntities.stream()
+        .map(MemberDetailDto::of)
+        .collect(Collectors.toList());
+  }
 
   public static MemberDetailDto of(MemberEntity memberEntity) {
 

@@ -11,6 +11,8 @@ import com.mymusiclist.backend.member.dto.request.UpdateRequest;
 import com.mymusiclist.backend.member.service.MemberService;
 import com.mymusiclist.backend.member.service.TokenService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,7 +32,7 @@ public class MemberController {
   private final TokenService tokenService;
 
   @PostMapping("/signup")
-  public ResponseEntity<String> singUp(@RequestBody SignUpRequest signUpRequest) {
+  public ResponseEntity<String> singUp(@Valid @RequestBody SignUpRequest signUpRequest) {
     String response = memberService.signUp(signUpRequest);
     return ResponseEntity.ok(response);
   }
@@ -43,14 +45,19 @@ public class MemberController {
   }
 
   @PostMapping("/login")
-  public ResponseEntity<TokenDto> login(@RequestBody LoginRequest loginRequest) {
+  public ResponseEntity<TokenDto> login(@Valid @RequestBody LoginRequest loginRequest) {
     TokenDto response = memberService.login(loginRequest);
     return ResponseEntity.ok(response);
   }
 
   @PostMapping("/logout")
   public void logout(HttpServletRequest request) {
-    memberService.logout(request);
+    String accessToken = request.getHeader("Authorization");
+    if (accessToken != null && accessToken.startsWith("Bearer ")) {
+      accessToken = accessToken.substring(7); // "Bearer " 이후의 토큰 값만 추출
+    }
+
+    memberService.logout(accessToken);
   }
 
   @PostMapping("/reissue")
@@ -60,7 +67,7 @@ public class MemberController {
   }
 
   @PostMapping("/password/reset")
-  public ResponseEntity<String> resetPassword(@RequestBody ResetRequest resetRequest) {
+  public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetRequest resetRequest) {
     String response = memberService.resetPassword(resetRequest);
     return ResponseEntity.ok(response);
   }
@@ -74,7 +81,7 @@ public class MemberController {
   }
 
   @PostMapping("/update")
-  public ResponseEntity<MemberDto> update(@RequestBody UpdateRequest updateRequest) {
+  public ResponseEntity<MemberDto> update(@Valid @RequestBody UpdateRequest updateRequest) {
     MemberDto response = memberService.update(updateRequest);
     return ResponseEntity.ok(response);
   }

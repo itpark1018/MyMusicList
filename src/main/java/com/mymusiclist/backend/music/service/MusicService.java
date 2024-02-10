@@ -2,6 +2,7 @@ package com.mymusiclist.backend.music.service;
 
 import com.mymusiclist.backend.music.dto.MyMusicListDto;
 import com.mymusiclist.backend.music.dto.PlayListDto;
+import com.mymusiclist.backend.music.dto.YoutubeSearchDto;
 import com.mymusiclist.backend.music.dto.request.AddRequest;
 import com.mymusiclist.backend.music.dto.request.UpdateRequest;
 import java.util.List;
@@ -11,7 +12,7 @@ import org.springframework.stereotype.Service;
 @Service
 public interface MusicService {
 
-  List<Map<String, String>> search(String keyword);
+  List<YoutubeSearchDto> search(String keyword);
 
   String createList(String listName);
 

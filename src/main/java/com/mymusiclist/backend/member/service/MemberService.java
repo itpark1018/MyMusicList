@@ -19,7 +19,7 @@ public interface MemberService {
 
   TokenDto login(LoginRequest loginRequest);
 
-  void logout(HttpServletRequest request);
+  void logout(String accessToken);
 
   String resetPassword(ResetRequest resetRequest);
 

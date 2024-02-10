@@ -2,6 +2,7 @@ package com.mymusiclist.backend.post.service;
 
 import com.mymusiclist.backend.exception.impl.DeletePostException;
 import com.mymusiclist.backend.exception.impl.InvalidAuthException;
+import com.mymusiclist.backend.exception.impl.InvalidTokenException;
 import com.mymusiclist.backend.exception.impl.NotFoundMemberException;
 import com.mymusiclist.backend.exception.impl.NotFoundMusicListException;
 import com.mymusiclist.backend.exception.impl.NotFoundPostException;
@@ -58,20 +59,14 @@ public class PostServiceImpl implements PostService {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
+
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new InvalidTokenException());
 
     MyMusicListEntity myMusicList = null;
     if (postRequest.getListName() != null && !postRequest.getListName().isEmpty()) {
-      Optional<MyMusicListEntity> byMemberIdAndListName = myMusicListRepository.findByMemberIdAndListName(
-          member, postRequest.getListName());
-      if (byMemberIdAndListName.isEmpty()) {
-        throw new NotFoundMusicListException();
-      }
-      myMusicList = byMemberIdAndListName.get();
+      myMusicList = myMusicListRepository.findByMemberIdAndListName(member,
+          postRequest.getListName()).orElseThrow(() -> new NotFoundMusicListException());
     }
 
     PostEntity postEntity = PostEntity.builder()
@@ -104,65 +99,42 @@ public class PostServiceImpl implements PostService {
         .map(GrantedAuthority::getAuthority)
         .anyMatch(role -> role.equals("ROLE_ADMIN"))) {
       // admin 권한이 있을 때
-      Optional<PostEntity> byPostId = postRepository.findByPostId(postId);
-      if (byPostId.isEmpty()) {
-        throw new NotFoundPostException();
-      }
-      post = byPostId.get();
+      post = postRepository.findByPostId(postId).orElseThrow(() -> new NotFoundPostException());
 
       // musicList 확인
       Long memberId = post.getMemberId().getMemberId();
-      Optional<MemberEntity> byMemberId = memberRepository.findByMemberId(memberId);
-      if (byMemberId.isEmpty()) {
-        throw new NotFoundMemberException();
-      }
-      member = byMemberId.get();
+
+      member = memberRepository.findByMemberId(memberId)
+          .orElseThrow(() -> new NotFoundMemberException());
 
       if (postRequest.getListName() != null && !postRequest.getListName().isEmpty()) {
-        Optional<MyMusicListEntity> byMemberIdAndListName = myMusicListRepository.findByMemberIdAndListName(
-            member, postRequest.getListName());
-        if (byMemberIdAndListName.isEmpty()) {
-          throw new NotFoundMusicListException();
-        }
-        myMusicList = byMemberIdAndListName.get();
+        myMusicList = myMusicListRepository.findByMemberIdAndListName(member,
+            postRequest.getListName()).orElseThrow(() -> new NotFoundMusicListException());
       }
 
     } else {
       // admin 권한이 없을 때
       String email = authentication.getName();
-      Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-      if (byEmail.isEmpty()) {
-        throw new NotFoundMemberException();
-      }
-      member = byEmail.get();
+      member = memberRepository.findByEmail(email).orElseThrow(() -> new InvalidTokenException());
 
-      Optional<PostEntity> byPostId = postRepository.findByPostId(postId);
-      if (byPostId.isEmpty()) {
-        throw new NotFoundPostException();
+      // 게시글이 존재하는지 확인
+      PostEntity postEntity = postRepository.findByPostId(postId)
+          .orElseThrow(() -> new NotFoundPostException());
+
+      // 삭제되어 있는 게시글일 경우
+      if (postEntity.getStatus().equals(PostStatus.DELETED)) {
+        throw new DeletePostException();
       }
 
       // 게시글 수정을 요청한 사용자 본인이 작성한 게시글인지 확인
-      Optional<PostEntity> byPostIdAndMemberId = postRepository.findByPostIdAndMemberId(postId,
-          member);
-      if (byPostIdAndMemberId.isEmpty()) {
-        throw new InvalidAuthException();
-      }
-      post = byPostIdAndMemberId.get();
+      post = postRepository.findByPostIdAndMemberId(postId, member)
+          .orElseThrow(() -> new InvalidAuthException());
 
       // musicList가 해당 회원에게 있는지 확인
       if (postRequest.getListName() != null && !postRequest.getListName().isEmpty()) {
-        Optional<MyMusicListEntity> byMemberIdAndListName = myMusicListRepository.findByMemberIdAndListName(
-            member, postRequest.getListName());
-        if (byMemberIdAndListName.isEmpty()) {
-          throw new NotFoundMusicListException();
-        }
-        myMusicList = byMemberIdAndListName.get();
+        myMusicList = myMusicListRepository.findByMemberIdAndListName(member,
+            postRequest.getListName()).orElseThrow(() -> new NotFoundMusicListException());
       }
-    }
-
-    // 삭제되어있는 게시글일 경우
-    if (post.getStatus().equals(PostStatus.DELETED)) {
-      throw new DeletePostException();
     }
 
     PostEntity postEntity = post.toBuilder()
@@ -189,26 +161,14 @@ public class PostServiceImpl implements PostService {
         .map(GrantedAuthority::getAuthority)
         .anyMatch(role -> role.equals("ROLE_ADMIN"))) {
       // admin 권한이 있을 때
-      Optional<PostEntity> byPostId = postRepository.findByPostId(postId);
-      if (byPostId.isEmpty()) {
-        throw new NotFoundPostException();
-      }
-      post = byPostId.get();
+      post = postRepository.findByPostId(postId).orElseThrow(() -> new NotFoundPostException());
     } else {
       // admin 권한이 없을 때
       String email = authentication.getName();
-      Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-      if (byEmail.isEmpty()) {
-        throw new NotFoundMemberException();
-      }
-      member = byEmail.get();
+      member = memberRepository.findByEmail(email).orElseThrow(() -> new InvalidTokenException());
 
-      Optional<PostEntity> byPostIdAndMemberId = postRepository.findByPostIdAndMemberId(postId,
-          member);
-      if (byPostIdAndMemberId.isEmpty()) {
-        throw new NotFoundPostException();
-      }
-      post = byPostIdAndMemberId.get();
+      post = postRepository.findByPostIdAndMemberId(postId, member)
+          .orElseThrow(() -> new NotFoundPostException());
     }
 
     // 이미 삭제되어있는 게시글일 경우
@@ -248,6 +208,7 @@ public class PostServiceImpl implements PostService {
 
   @Override
   public List<PostListDto> getList(Boolean sortByLikes) {
+
     List<PostEntity> posts;
 
     if (sortByLikes) {
@@ -262,11 +223,9 @@ public class PostServiceImpl implements PostService {
   @Override
   public PostDetailDto getDetail(Long postId) {
 
-    Optional<PostEntity> byPostId = postRepository.findByPostId(postId);
-    if (byPostId.isEmpty()) {
-      throw new NotFoundPostException();
-    }
-    PostEntity post = byPostId.get();
+    PostEntity post = postRepository.findByPostId(postId)
+        .orElseThrow(() -> new NotFoundPostException());
+
     if (post.getStatus().equals(PostStatus.DELETED)) {
       throw new DeletePostException();
     }
@@ -294,11 +253,9 @@ public class PostServiceImpl implements PostService {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
+
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new InvalidTokenException());
 
     List<PostEntity> posts = postRepository.findByMemberIdAndStatus(member,
         PostStatus.ACTIVE);
@@ -312,17 +269,12 @@ public class PostServiceImpl implements PostService {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
 
-    Optional<PostEntity> byPostId = postRepository.findByPostId(postId);
-    if (byPostId.isEmpty()) {
-      throw new NotFoundPostException();
-    }
-    PostEntity post = byPostId.get();
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new InvalidTokenException());
+
+    PostEntity post = postRepository.findByPostId(postId)
+        .orElseThrow(() -> new NotFoundPostException());
 
     if (post.getStatus().equals(PostStatus.DELETED)) {
       throw new DeletePostException();

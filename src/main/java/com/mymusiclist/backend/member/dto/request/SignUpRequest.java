@@ -2,6 +2,8 @@ package com.mymusiclist.backend.member.dto.request;
 
 import com.mymusiclist.backend.member.domain.MemberEntity;
 import com.mymusiclist.backend.type.MemberStatus;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -18,11 +20,22 @@ import org.springframework.security.crypto.bcrypt.BCrypt;
 @Builder
 public class SignUpRequest {
 
+  @Email(message = "이메일 형식이 올바르지 않습니다.")
+  @NotBlank(message = "이메일은 공백일 수 없습니다.")
   private String email;
+
+  @NotBlank(message = "비밀번호는 공백일 수 없습니다.")
   private String password;
+
+  @NotBlank(message = "비밀번호 확인은 공백일 수 없습니다.")
   private String checkPassword;
+
+  @NotBlank(message = "이름은 공백일 수 없습니다.")
   private String name;
+
+  @NotBlank(message = "닉네임은 공백일 수 없습니다.")
   private String nickname;
+
   private String imageUrl;
   private String introduction;
 

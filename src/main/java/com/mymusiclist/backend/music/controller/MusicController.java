@@ -2,11 +2,14 @@ package com.mymusiclist.backend.music.controller;
 
 import com.mymusiclist.backend.music.dto.MyMusicListDto;
 import com.mymusiclist.backend.music.dto.PlayListDto;
+import com.mymusiclist.backend.music.dto.YoutubeSearchDto;
 import com.mymusiclist.backend.music.dto.request.AddRequest;
 import com.mymusiclist.backend.music.dto.request.UpdateRequest;
 import com.mymusiclist.backend.music.service.MusicService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,27 +28,29 @@ public class MusicController {
   private final MusicService musicService;
 
   @GetMapping("/search")
-  public ResponseEntity<List<Map<String, String>>> search(
-      @RequestParam(name = "keyword") String keyword) {
-    List<Map<String, String>> response = musicService.search(keyword);
+  public ResponseEntity<List<YoutubeSearchDto>> search(
+      @Valid @NotNull(message = "검색어가 없으면 안됩니다.") @RequestParam(name = "keyword") String keyword) {
+    List<YoutubeSearchDto> response = musicService.search(keyword);
     return ResponseEntity.ok(response);
   }
 
   @PostMapping("/list/create")
-  public ResponseEntity<String> createList(@RequestParam(name = "listName") String listName) {
+  public ResponseEntity<String> createList(
+      @Valid @NotBlank(message = "뮤직 리스트 이름은 공백일 수 없습니다.") @RequestParam(name = "listName") String listName) {
     String response = musicService.createList(listName);
     return ResponseEntity.ok(response);
   }
 
   @PostMapping("/list/delete")
-  public ResponseEntity<String> deleteList(@RequestParam(name = "listName") String listName) {
+  public ResponseEntity<String> deleteList(
+      @Valid @NotBlank(message = "뮤직 리스트 이름은 공백일 수 없습니다.") @RequestParam(name = "listName") String listName) {
     String response = musicService.deleteList(listName);
     return ResponseEntity.ok(response);
   }
 
   @PostMapping("/list/{listName}/update")
   public ResponseEntity<MyMusicListDto> updateList(@PathVariable(name = "listName") String listName,
-      @RequestBody UpdateRequest updateRequest) {
+      @Valid @RequestBody UpdateRequest updateRequest) {
     MyMusicListDto response = musicService.updateList(listName, updateRequest);
     return ResponseEntity.ok(response);
   }
@@ -64,7 +69,7 @@ public class MusicController {
 
   @PostMapping("list/{listName}/add")
   public ResponseEntity<String> addMusic(@PathVariable(name = "listName") String listName,
-      @RequestBody AddRequest addRequest) {
+      @Valid @RequestBody AddRequest addRequest) {
     String response = musicService.addMusic(listName, addRequest);
     return ResponseEntity.ok(response);
   }

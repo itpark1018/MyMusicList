@@ -27,12 +27,10 @@ import com.mymusiclist.backend.post.domain.PostEntity;
 import com.mymusiclist.backend.post.repository.CommentRepository;
 import com.mymusiclist.backend.post.repository.PostRepository;
 import com.mymusiclist.backend.type.MemberStatus;
-import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -125,12 +123,9 @@ public class MemberServiceImpl implements MemberService {
   @Transactional
   public String auth(String email, String code) {
 
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new NotFoundMemberException());
 
-    MemberEntity member = byEmail.get();
     if (!code.equals(member.getAuthCode())) {
       throw new InvalidAuthCodeException();
     }
@@ -147,12 +142,9 @@ public class MemberServiceImpl implements MemberService {
   @Override
   public TokenDto login(LoginRequest loginRequest) {
 
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(loginRequest.getEmail());
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
+    MemberEntity member = memberRepository.findByEmail(loginRequest.getEmail())
+        .orElseThrow(() -> new NotFoundMemberException());
 
-    MemberEntity member = byEmail.get();
     if (member.getStatus().equals(MemberStatus.SUSPENDED)) {
       throw new SuspendedMemberException();
     } else if (member.getStatus().equals(MemberStatus.WAITING_FOR_APPROVAL)) {
@@ -170,13 +162,7 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  public void logout(HttpServletRequest request) {
-
-    String accessToken = request.getHeader("Authorization");
-    if (accessToken != null && accessToken.startsWith("Bearer ")) {
-      accessToken = accessToken.substring(7); // "Bearer " 이후의 토큰 값만 추출
-      System.out.println("AccessToken: " + accessToken);
-    }
+  public void logout(String accessToken) {
 
     // 로그아웃 하고 싶은 토큰이 유효한지 검증
     if (!jwtTokenProvider.validateToken(accessToken)) {
@@ -203,12 +189,9 @@ public class MemberServiceImpl implements MemberService {
   @Transactional
   public String resetPassword(ResetRequest resetRequest) {
 
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(resetRequest.getEmail());
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
+    MemberEntity member = memberRepository.findByEmail(resetRequest.getEmail())
+        .orElseThrow(() -> new NotFoundMemberException());
 
-    MemberEntity member = byEmail.get();
     String uuid = UUID.randomUUID().toString();
     String encPassword = BCrypt.hashpw(resetRequest.getResetPassword(), BCrypt.gensalt());
 
@@ -233,12 +216,9 @@ public class MemberServiceImpl implements MemberService {
   @Override
   public String passwordAuth(String email, String code, String resetPassword) {
 
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new NotFoundMemberException());
 
-    MemberEntity member = byEmail.get();
     if (!code.equals(member.getPasswordAuthCode())) {
       throw new InvalidAuthCodeException();
     }
@@ -267,21 +247,14 @@ public class MemberServiceImpl implements MemberService {
     // AccessToken에서 email을 가져와서 회원 조회
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
 
-    Optional<MemberEntity> byNickname = memberRepository.findByNickname(
-        updateRequest.getNickname());
-    if (byNickname.isPresent()) {
-      MemberEntity member = byNickname.get();
-      if (member.getStatus().equals(MemberStatus.ACTIVE)) {
-        throw new DuplicateNicknameException();
-      }
-    }
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new InvalidTokenException());
 
-    MemberEntity member = byEmail.get();
+    // 닉네임 중복체크
+    memberRepository.findByNicknameAndStatus(updateRequest.getNickname(), MemberStatus.ACTIVE)
+        .orElseThrow(() -> new DuplicateNicknameException());
+
     if (!updateRequest.getNickname().equals(member.getNickname())) {
       // 사용자가 작성한 게시글, 댓글의 닉네임을 새롭게 변경하는 닉네임으로 변경
       updateNicknameInPostsAndComments(member, updateRequest.getNickname());
@@ -299,15 +272,14 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
+  @Transactional
   public String withdrawal() {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
+
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new InvalidTokenException());
 
     MemberEntity memberEntity = member.toBuilder()
         .nickname("탈퇴한 회원 " + member.getNickname())
@@ -326,11 +298,8 @@ public class MemberServiceImpl implements MemberService {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new InvalidTokenException());
 
     return MemberDto.of(member);
   }
@@ -340,16 +309,10 @@ public class MemberServiceImpl implements MemberService {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
+    memberRepository.findByEmail(email).orElseThrow(() -> new InvalidTokenException());
 
-    Optional<MemberEntity> byNickname = memberRepository.findByNickname(nickname);
-    if (byNickname.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byNickname.get();
+    MemberEntity member = memberRepository.findByNickname(nickname)
+        .orElseThrow(() -> new NotFoundMemberException());
 
     return MemberInfoDto.of(member);
   }
