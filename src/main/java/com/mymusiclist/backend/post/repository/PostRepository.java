@@ -32,4 +32,12 @@ public interface PostRepository extends JpaRepository<PostEntity, Long> {
   List<PostEntity> findByNicknameAndStatus(String nickname, PostStatus status);
 
   Optional<PostEntity> findByPostIdAndStatus(Long postId, PostStatus description);
+
+  List<PostEntity> findByTitleContaining(String keyword);
+
+  List<PostEntity> findByContentContaining(String keyword);
+
+  List<PostEntity> findByTitleContainingOrContentContaining(String keyword, String keyword1);
+
+  List<PostEntity> findByNickname(String keyword);
 }

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -91,36 +92,59 @@ public class CommentServiceImpl implements CommentService {
   public String delete(Long postId, Long commentId) {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
 
-    Optional<PostEntity> byPostIdAndStatus = postRepository.findByPostId(postId);
-    if (byPostIdAndStatus.isEmpty()) {
-      throw new NotFoundPostException();
-    }
-    PostEntity post = byPostIdAndStatus.get();
+    CommentEntity comment = new CommentEntity();
+    PostEntity post = new PostEntity();
 
-    if (post.getStatus().equals(PostStatus.DELETED)) {
-      throw new DeletePostException();
-    }
+    if (authentication.getAuthorities().stream()
+        .map(GrantedAuthority::getAuthority)
+        .anyMatch(role -> role.equals("ROLE_ADMIN"))) {
+      // admin 권한이 있을 때
+      Optional<CommentEntity> byCommentId = commentRepository.findByCommentId(commentId);
+      if (byCommentId.isEmpty()) {
+        throw new NotFoundCommentException();
+      }
+      comment = byCommentId.get();
 
-    Optional<CommentEntity> byComment = commentRepository.findByMemberIdAndPostIdAndCommentId(
-        member, post, commentId);
-    if (byComment.isEmpty()) {
-      throw new NotFoundCommentException();
-    }
-    CommentEntity comment = byComment.get();
+      Optional<PostEntity> byPostId = postRepository.findByPostId(comment.getPostId().getPostId());
+      if (byPostId.isEmpty()) {
+        throw new NotFoundPostException();
+      }
+      post = byPostId.get();
+    } else {
+      // admin 권한이 없을 때
+      String email = authentication.getName();
+      Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
+      if (byEmail.isEmpty()) {
+        throw new NotFoundMemberException();
+      }
+      MemberEntity member = byEmail.get();
 
-    if (comment.getStatus().equals(CommentStatus.DELETED)) {
-      throw new DeleteCommentException();
+      Optional<PostEntity> byPostIdAndStatus = postRepository.findByPostId(postId);
+      if (byPostIdAndStatus.isEmpty()) {
+        throw new NotFoundPostException();
+      }
+      post = byPostIdAndStatus.get();
+
+      if (post.getStatus().equals(PostStatus.DELETED)) {
+        throw new DeletePostException();
+      }
+
+      Optional<CommentEntity> byComment = commentRepository.findByMemberIdAndPostIdAndCommentId(
+          member, post, commentId);
+      if (byComment.isEmpty()) {
+        throw new NotFoundCommentException();
+      }
+      comment = byComment.get();
+
+      if (comment.getStatus().equals(CommentStatus.DELETED)) {
+        throw new DeleteCommentException();
+      }
     }
 
     CommentEntity commentEntity = comment.toBuilder()
         .status(CommentStatus.DELETED)
+        .deleteDate(LocalDateTime.now())
         .build();
     commentRepository.save(commentEntity);
 
@@ -141,32 +165,48 @@ public class CommentServiceImpl implements CommentService {
   public String update(Long postId, Long commentId, CommentRequest commentRequest) {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
 
-    Optional<PostEntity> byPostI = postRepository.findByPostId(postId);
-    if (byPostI.isEmpty()) {
-      throw new NotFoundPostException();
-    }
-    PostEntity post = byPostI.get();
+    CommentEntity comment = new CommentEntity();
 
-    if (post.getStatus().equals(PostStatus.DELETED)) {
-      throw new DeletePostException();
-    }
+    if (authentication.getAuthorities().stream()
+        .map(GrantedAuthority::getAuthority)
+        .anyMatch(role -> role.equals("ROLE_ADMIN"))) {
+      // admin 권한이 있을 때
+      Optional<CommentEntity> byCommentId = commentRepository.findByCommentId(commentId);
+      if (byCommentId.isEmpty()) {
+        throw new NotFoundCommentException();
+      }
+      comment = byCommentId.get();
+    } else {
+      // admin 권한이 없을 때
 
-    Optional<CommentEntity> byComment = commentRepository.findByMemberIdAndPostIdAndCommentId(
-        member, post, commentId);
-    if (byComment.isEmpty()) {
-      throw new NotFoundCommentException();
-    }
-    CommentEntity comment = byComment.get();
+      String email = authentication.getName();
+      Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
+      if (byEmail.isEmpty()) {
+        throw new NotFoundMemberException();
+      }
+      MemberEntity member = byEmail.get();
 
-    if (comment.getStatus().equals(CommentStatus.DELETED)) {
-      throw new DeleteCommentException();
+      Optional<PostEntity> byPostI = postRepository.findByPostId(postId);
+      if (byPostI.isEmpty()) {
+        throw new NotFoundPostException();
+      }
+      PostEntity post = byPostI.get();
+
+      if (post.getStatus().equals(PostStatus.DELETED)) {
+        throw new DeletePostException();
+      }
+
+      Optional<CommentEntity> byComment = commentRepository.findByMemberIdAndPostIdAndCommentId(
+          member, post, commentId);
+      if (byComment.isEmpty()) {
+        throw new NotFoundCommentException();
+      }
+      comment = byComment.get();
+
+      if (comment.getStatus().equals(CommentStatus.DELETED)) {
+        throw new DeleteCommentException();
+      }
     }
 
     CommentEntity commentEntity = comment.toBuilder()

@@ -1,7 +1,7 @@
-package com.mymusiclist.backend.post.dto;
+package com.mymusiclist.backend.admin.dto;
 
-import com.mymusiclist.backend.admin.dto.AdminPostListDto;
 import com.mymusiclist.backend.post.domain.PostEntity;
+import com.mymusiclist.backend.type.PostStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,7 +16,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PostListDto {
+public class AdminPostListDto {
 
   private Long postId;
   private String title;
@@ -24,21 +24,23 @@ public class PostListDto {
   private LocalDateTime createDate;
   private Integer likeCnt;
   private Integer commentCnt;
+  private PostStatus status;
 
-  public static List<PostListDto> listOf(List<PostEntity> postEntities) {
+  public static List<AdminPostListDto> listOf(List<PostEntity> postEntities) {
     return postEntities.stream()
-        .map(PostListDto::of)
+        .map(AdminPostListDto::of)
         .collect(Collectors.toList());
   }
 
-  public static PostListDto of(PostEntity postEntity) {
-    return PostListDto.builder()
+  public static AdminPostListDto of(PostEntity postEntity) {
+    return AdminPostListDto.builder()
         .postId(postEntity.getPostId())
         .title(postEntity.getTitle())
         .nickName(postEntity.getNickname())
         .createDate(postEntity.getCreateDate())
         .likeCnt(postEntity.getLikeCnt())
         .commentCnt(postEntity.getCommentCnt())
+        .status(postEntity.getStatus())
         .build();
   }
 }
