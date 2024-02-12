@@ -2,6 +2,7 @@ package com.mymusiclist.backend.post.service;
 
 import com.mymusiclist.backend.exception.impl.DeletePostException;
 import com.mymusiclist.backend.exception.impl.InvalidAuthException;
+import com.mymusiclist.backend.exception.impl.InvalidSearchOptionException;
 import com.mymusiclist.backend.exception.impl.InvalidTokenException;
 import com.mymusiclist.backend.exception.impl.NotFoundMemberException;
 import com.mymusiclist.backend.exception.impl.NotFoundMusicListException;
@@ -327,6 +328,9 @@ public class PostServiceImpl implements PostService {
     } else if (searchOption.equals(SearchOption.NICKNAME.getValue())) {
       // 닉네임으로 게시물 검색, 닉네임 검색은 닉네임이 정확해야 검색 가능.
       posts = postRepository.findByNicknameAndStatus(keyword, PostStatus.ACTIVE);
+    } else {
+      // 검색옵션이 잘못되었을 때
+      throw new InvalidSearchOptionException();
     }
 
     return PostListDto.listOf(posts);

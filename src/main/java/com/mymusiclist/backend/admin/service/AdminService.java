@@ -19,9 +19,7 @@ public interface AdminService {
 
   String memberUpdate(MemberUpdateRequest memberUpdateRequest);
 
-  List<MemberDetailDto> searchName(String name);
-
-  MemberDetailDto searchNickname(String nickname);
+  List<MemberDetailDto> searchMember(String keyword, String searchOption);
 
   String postDelete(Long postId);
 

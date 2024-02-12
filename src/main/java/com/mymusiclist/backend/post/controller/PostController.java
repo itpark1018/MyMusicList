@@ -107,7 +107,7 @@ public class PostController {
     commentService.like(postId, commentId);
   }
 
-  @GetMapping("/myComment")
+  @GetMapping("/my-comment")
   public ResponseEntity<List<MyCommentDto>> getMyComment() {
     List<MyCommentDto> response = commentService.getMyComment();
     return ResponseEntity.ok(response);

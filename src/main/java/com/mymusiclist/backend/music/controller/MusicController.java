@@ -74,7 +74,7 @@ public class MusicController {
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("/playList/{listName}")
+  @PostMapping("/playlist/{listName}")
   public ResponseEntity<List<PlayListDto>> playList(
       @PathVariable(name = "listName") String listName,
       @RequestParam(name = "repeatPlay") Boolean repeatPlay,

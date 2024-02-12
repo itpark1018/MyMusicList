@@ -11,7 +11,8 @@ public enum SearchOption {
   CONTENT("content"), // 게시글 내용
   TITLE_AND_CONTENT("titleAndContent"), // 게시글 제목 또는 게시글 내용
   NICKNAME("nickname"), // 닉네임
-  COMMENT("comment"); // 댓글 내용
+  COMMENT("comment"),
+  NAME("name"); // 댓글 내용
 
   private final String value;
 }

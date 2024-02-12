@@ -7,6 +7,8 @@ import com.mymusiclist.backend.admin.dto.request.CommentUpdateRequest;
 import com.mymusiclist.backend.admin.dto.request.MemberStatusRequest;
 import com.mymusiclist.backend.admin.dto.request.MemberUpdateRequest;
 import com.mymusiclist.backend.admin.dto.request.PostUpdateRequest;
+import com.mymusiclist.backend.exception.impl.DuplicateNicknameException;
+import com.mymusiclist.backend.exception.impl.InvalidSearchOptionException;
 import com.mymusiclist.backend.exception.impl.NotFoundMemberException;
 import com.mymusiclist.backend.member.domain.MemberEntity;
 import com.mymusiclist.backend.member.repository.MemberRepository;
@@ -18,6 +20,7 @@ import com.mymusiclist.backend.post.service.CommentService;
 import com.mymusiclist.backend.post.service.PostService;
 import com.mymusiclist.backend.type.MemberStatus;
 import com.mymusiclist.backend.type.SearchOption;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -85,10 +88,18 @@ public class AdminServiceImpl implements AdminService {
     MemberEntity member = memberRepository.findByMemberId(memberUpdateRequest.getMemberId())
         .orElseThrow(() -> new NotFoundMemberException());
 
+    if (!memberUpdateRequest.getNickname().isEmpty()) {
+      memberRepository.findByNicknameAndStatus(memberUpdateRequest.getNickname(),
+          MemberStatus.ACTIVE).ifPresent(item -> {
+        throw new DuplicateNicknameException();
+      });
+    }
+
     MemberEntity memberEntity = member.toBuilder()
         .nickname(memberUpdateRequest.getNickname())
         .imageUrl(memberUpdateRequest.getImageUrl())
         .introduction(memberUpdateRequest.getIntroduction())
+        .modDate(LocalDateTime.now())
         .build();
     memberRepository.save(memberEntity);
 
@@ -96,23 +107,25 @@ public class AdminServiceImpl implements AdminService {
   }
 
   @Override
-  public List<MemberDetailDto> searchName(String name) {
+  public List<MemberDetailDto> searchMember(String keyword, String searchOption) {
 
-    List<MemberEntity> byName = memberRepository.findByName(name);
-    if (byName.isEmpty()) {
-      throw new NotFoundMemberException();
+    if (searchOption.equals(SearchOption.NAME.getValue())) {
+      List<MemberEntity> byName = memberRepository.findByName(keyword);
+      if (byName.isEmpty()) {
+        throw new NotFoundMemberException();
+      }
+
+      return MemberDetailDto.listOf(byName);
+    } else if (searchOption.equals(SearchOption.NICKNAME.getValue())) {
+      MemberEntity member = memberRepository.findByNickname(keyword)
+          .orElseThrow(() -> new NotFoundMemberException());
+
+      List<MemberDetailDto> list = new ArrayList<>();
+      list.add(MemberDetailDto.of(member));
+      return list;
     }
 
-    return MemberDetailDto.listOf(byName);
-  }
-
-  @Override
-  public MemberDetailDto searchNickname(String nickname) {
-
-    MemberEntity member = memberRepository.findByNickname(nickname)
-        .orElseThrow(() -> new NotFoundMemberException());
-
-    return MemberDetailDto.of(member);
+    throw new InvalidSearchOptionException();
   }
 
   @Override

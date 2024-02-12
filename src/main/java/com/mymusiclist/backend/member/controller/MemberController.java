@@ -92,7 +92,7 @@ public class MemberController {
     return ResponseEntity.ok(response);
   }
 
-  @GetMapping("/myInfo")
+  @GetMapping("/my-info")
   public ResponseEntity<MemberDto> myInfo() {
     MemberDto response = memberService.myInfo();
     return ResponseEntity.ok(response);
