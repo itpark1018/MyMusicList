@@ -41,12 +41,8 @@ public class AdminServiceImpl implements AdminService {
   @Transactional
   public String setMemberStatus(MemberStatusRequest memberStatusRequest) {
 
-    Optional<MemberEntity> byMemberId = memberRepository.findByMemberId(
-        memberStatusRequest.getMemberId());
-    if (byMemberId.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byMemberId.get();
+    MemberEntity member = memberRepository.findByMemberId(memberStatusRequest.getMemberId())
+        .orElseThrow(() -> new NotFoundMemberException());
 
     // 회원의 계정을 정지시킬때와 활성화 시킬때에 대한 구분이 필요
     if (memberStatusRequest.getStatus().equals(MemberStatus.SUSPENDED)) {
@@ -76,11 +72,8 @@ public class AdminServiceImpl implements AdminService {
   @Override
   public MemberDetailDto getMemberInfo(Long memberId) {
 
-    Optional<MemberEntity> byMemberId = memberRepository.findByMemberId(memberId);
-    if (byMemberId.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byMemberId.get();
+    MemberEntity member = memberRepository.findByMemberId(memberId)
+        .orElseThrow(() -> new NotFoundMemberException());
 
     return MemberDetailDto.of(member);
   }
@@ -89,12 +82,8 @@ public class AdminServiceImpl implements AdminService {
   @Transactional
   public String memberUpdate(MemberUpdateRequest memberUpdateRequest) {
 
-    Optional<MemberEntity> byMemberId = memberRepository.findByMemberId(
-        memberUpdateRequest.getMemberId());
-    if (byMemberId.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byMemberId.get();
+    MemberEntity member = memberRepository.findByMemberId(memberUpdateRequest.getMemberId())
+        .orElseThrow(() -> new NotFoundMemberException());
 
     MemberEntity memberEntity = member.toBuilder()
         .nickname(memberUpdateRequest.getNickname())
@@ -114,22 +103,14 @@ public class AdminServiceImpl implements AdminService {
       throw new NotFoundMemberException();
     }
 
-    List<MemberDetailDto> memberDetailDtoList = new ArrayList<>();
-    for (MemberEntity member : byName) {
-      memberDetailDtoList.add(MemberDetailDto.of(member));
-    }
-
-    return memberDetailDtoList;
+    return MemberDetailDto.listOf(byName);
   }
 
   @Override
   public MemberDetailDto searchNickname(String nickname) {
 
-    Optional<MemberEntity> byNickname = memberRepository.findByNickname(nickname);
-    if (byNickname.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byNickname.get();
+    MemberEntity member = memberRepository.findByNickname(nickname)
+        .orElseThrow(() -> new NotFoundMemberException());
 
     return MemberDetailDto.of(member);
   }

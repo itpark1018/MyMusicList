@@ -2,6 +2,7 @@ package com.mymusiclist.backend.post.service;
 
 import com.mymusiclist.backend.exception.impl.DeleteCommentException;
 import com.mymusiclist.backend.exception.impl.DeletePostException;
+import com.mymusiclist.backend.exception.impl.InvalidTokenException;
 import com.mymusiclist.backend.exception.impl.NotFoundCommentException;
 import com.mymusiclist.backend.exception.impl.NotFoundMemberException;
 import com.mymusiclist.backend.exception.impl.NotFoundPostException;
@@ -52,18 +53,12 @@ public class CommentServiceImpl implements CommentService {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
 
-    Optional<PostEntity> byPostId = postRepository.findByPostId(postId);
-    if (byPostId.isEmpty()) {
-      throw new NotFoundPostException();
-    }
-    PostEntity post = byPostId.get();
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new InvalidTokenException());
 
+    PostEntity post = postRepository.findByPostId(postId)
+        .orElseThrow(() -> new NotFoundPostException());
     if (post.getStatus().equals(PostStatus.DELETED)) {
       throw new DeletePostException();
     }
@@ -100,43 +95,23 @@ public class CommentServiceImpl implements CommentService {
         .map(GrantedAuthority::getAuthority)
         .anyMatch(role -> role.equals("ROLE_ADMIN"))) {
       // admin 권한이 있을 때
-      Optional<CommentEntity> byCommentId = commentRepository.findByCommentId(commentId);
-      if (byCommentId.isEmpty()) {
-        throw new NotFoundCommentException();
-      }
-      comment = byCommentId.get();
+      comment = commentRepository.findByCommentId(commentId).orElseThrow(() -> new NotFoundCommentException());
 
-      Optional<PostEntity> byPostId = postRepository.findByPostId(comment.getPostId().getPostId());
-      if (byPostId.isEmpty()) {
-        throw new NotFoundPostException();
-      }
-      post = byPostId.get();
+      post = postRepository.findByPostId(comment.getPostId().getPostId()).orElseThrow(() ->  new NotFoundPostException());
     } else {
       // admin 권한이 없을 때
       String email = authentication.getName();
-      Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-      if (byEmail.isEmpty()) {
-        throw new NotFoundMemberException();
-      }
-      MemberEntity member = byEmail.get();
+      MemberEntity member = memberRepository.findByEmail(email)
+          .orElseThrow(() -> new InvalidTokenException());
 
-      Optional<PostEntity> byPostIdAndStatus = postRepository.findByPostId(postId);
-      if (byPostIdAndStatus.isEmpty()) {
-        throw new NotFoundPostException();
-      }
-      post = byPostIdAndStatus.get();
-
+      post = postRepository.findByPostId(postId)
+          .orElseThrow(() -> new NotFoundPostException());
       if (post.getStatus().equals(PostStatus.DELETED)) {
         throw new DeletePostException();
       }
 
-      Optional<CommentEntity> byComment = commentRepository.findByMemberIdAndPostIdAndCommentId(
-          member, post, commentId);
-      if (byComment.isEmpty()) {
-        throw new NotFoundCommentException();
-      }
-      comment = byComment.get();
-
+      comment = commentRepository.findByMemberIdAndPostIdAndCommentId(
+          member, post, commentId).orElseThrow(() -> new NotFoundCommentException());
       if (comment.getStatus().equals(CommentStatus.DELETED)) {
         throw new DeleteCommentException();
       }
@@ -172,38 +147,19 @@ public class CommentServiceImpl implements CommentService {
         .map(GrantedAuthority::getAuthority)
         .anyMatch(role -> role.equals("ROLE_ADMIN"))) {
       // admin 권한이 있을 때
-      Optional<CommentEntity> byCommentId = commentRepository.findByCommentId(commentId);
-      if (byCommentId.isEmpty()) {
-        throw new NotFoundCommentException();
-      }
-      comment = byCommentId.get();
+      comment = commentRepository.findByCommentId(commentId).orElseThrow(() -> new NotFoundCommentException());
     } else {
       // admin 권한이 없을 때
-
       String email = authentication.getName();
-      Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-      if (byEmail.isEmpty()) {
-        throw new NotFoundMemberException();
-      }
-      MemberEntity member = byEmail.get();
+      MemberEntity member = memberRepository.findByEmail(email).orElseThrow(() -> new InvalidTokenException());
 
-      Optional<PostEntity> byPostI = postRepository.findByPostId(postId);
-      if (byPostI.isEmpty()) {
-        throw new NotFoundPostException();
-      }
-      PostEntity post = byPostI.get();
-
+      PostEntity post = postRepository.findByPostId(postId).orElseThrow(() -> new NotFoundPostException());
       if (post.getStatus().equals(PostStatus.DELETED)) {
         throw new DeletePostException();
       }
 
-      Optional<CommentEntity> byComment = commentRepository.findByMemberIdAndPostIdAndCommentId(
-          member, post, commentId);
-      if (byComment.isEmpty()) {
-        throw new NotFoundCommentException();
-      }
-      comment = byComment.get();
-
+      comment = commentRepository.findByMemberIdAndPostIdAndCommentId(
+          member, post, commentId).orElseThrow(() -> new NotFoundCommentException());
       if (comment.getStatus().equals(CommentStatus.DELETED)) {
         throw new DeleteCommentException();
       }
@@ -224,29 +180,16 @@ public class CommentServiceImpl implements CommentService {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
 
-    Optional<PostEntity> byPostIdAndStatus = postRepository.findByPostId(postId);
-    if (byPostIdAndStatus.isEmpty()) {
-      throw new NotFoundPostException();
-    }
-    PostEntity post = byPostIdAndStatus.get();
+    MemberEntity member = memberRepository.findByEmail(email).orElseThrow(() -> new InvalidTokenException());
 
+    PostEntity post = postRepository.findByPostId(postId).orElseThrow(() -> new NotFoundPostException());
     if (post.getStatus().equals(PostStatus.DELETED)) {
       throw new DeletePostException();
     }
 
-    Optional<CommentEntity> byPostIdAndCommentId = commentRepository.findByPostIdAndCommentId(post,
-        commentId);
-    if (byPostIdAndCommentId.isEmpty()) {
-      throw new NotFoundCommentException();
-    }
-    CommentEntity comment = byPostIdAndCommentId.get();
-
+    CommentEntity comment = commentRepository.findByPostIdAndCommentId(post,
+        commentId).orElseThrow(() -> new NotFoundCommentException());
     if (comment.getStatus().equals(CommentStatus.DELETED)) {
       throw new DeleteCommentException();
     }
@@ -283,11 +226,8 @@ public class CommentServiceImpl implements CommentService {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
+
+    MemberEntity member = memberRepository.findByEmail(email).orElseThrow(() -> new InvalidTokenException());
 
     List<CommentEntity> commentList = commentRepository.findAllByMemberIdAndStatus(member,
         CommentStatus.ACTIVE);

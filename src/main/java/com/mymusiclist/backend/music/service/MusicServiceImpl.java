@@ -6,9 +6,9 @@ import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.SearchListResponse;
 import com.google.api.services.youtube.model.SearchResult;
 import com.mymusiclist.backend.exception.impl.DuplicateListException;
+import com.mymusiclist.backend.exception.impl.InvalidTokenException;
 import com.mymusiclist.backend.exception.impl.ListEmptyException;
 import com.mymusiclist.backend.exception.impl.MemberIdMismatchException;
-import com.mymusiclist.backend.exception.impl.NotFoundMemberException;
 import com.mymusiclist.backend.exception.impl.NotFoundMusicException;
 import com.mymusiclist.backend.exception.impl.NotFoundMusicListException;
 import com.mymusiclist.backend.member.domain.MemberEntity;
@@ -17,10 +17,12 @@ import com.mymusiclist.backend.music.domain.MusicEntity;
 import com.mymusiclist.backend.music.domain.MyMusicListEntity;
 import com.mymusiclist.backend.music.dto.MyMusicListDto;
 import com.mymusiclist.backend.music.dto.PlayListDto;
+import com.mymusiclist.backend.music.dto.YoutubeSearchDto;
 import com.mymusiclist.backend.music.dto.request.AddRequest;
 import com.mymusiclist.backend.music.dto.request.UpdateRequest;
 import com.mymusiclist.backend.music.repository.MusicRepository;
 import com.mymusiclist.backend.music.repository.MyMusicListRepository;
+import com.mymusiclist.backend.music.youtube.YoutubeClient;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -44,41 +46,26 @@ public class MusicServiceImpl implements MusicService {
   private final MemberRepository memberRepository;
   private final MyMusicListRepository myMusicListRepository;
   private final MusicRepository musicRepository;
-
-  @Value("${youtube.apiKey}")
-  private String apiKey;
+  private final YoutubeClient youtubeClient;
 
   @Override
-  public List<Map<String, String>> search(String keyword) {
+  public List<YoutubeSearchDto> search(String keyword) {
 
     try {
-      YouTube youtube = new YouTube.Builder(new NetHttpTransport(), new JacksonFactory(), null)
-          .setApplicationName("MyMusicList")
-          .build();
-
-      // YouTube API 검색 요청
-      YouTube.Search.List search = youtube.search().list(Collections.singletonList("id,snippet"));
-      search.setKey(apiKey);
-      search.setQ(keyword);
-      search.setType(Collections.singletonList("video"));
-      search.setMaxResults(5L); // 가져올 결과의 최대 수
-
-      // API 응답에서 비디오 ID 및 제목 추출
-      SearchListResponse searchResponse = search.execute();
-      List<SearchResult> searchResults = searchResponse.getItems();
+      List<SearchResult> searchResults = youtubeClient.youtubeSearch(keyword);
 
       if (searchResults != null && !searchResults.isEmpty()) {
-        List<Map<String, String>> resultsList = new ArrayList<>();
+        List<YoutubeSearchDto> searchDtoList = new ArrayList<>();
 
         for (SearchResult searchResult : searchResults) {
-          Map<String, String> result = new HashMap<>();
-          result.put("title", searchResult.getSnippet().getTitle());
-          result.put("videoUrl",
-              "https://www.youtube.com/watch?v=" + searchResult.getId().getVideoId());
-          resultsList.add(result);
+          YoutubeSearchDto searchDto = YoutubeSearchDto.builder()
+              .title(searchResult.getSnippet().getTitle())
+              .videoUrl("https://www.youtube.com/watch?v=" + searchResult.getId().getVideoId())
+              .build();
+          searchDtoList.add(searchDto);
         }
 
-        return resultsList;
+        return searchDtoList;
       }
 
     } catch (IOException e) {
@@ -94,27 +81,24 @@ public class MusicServiceImpl implements MusicService {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
 
-    Optional<MyMusicListEntity> byListName = myMusicListRepository.findByMemberIdAndListName(member,
-        listName);
-    if (byListName.isPresent()) {
-      throw new DuplicateListException();
-    }
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new InvalidTokenException());
 
-    MyMusicListEntity myMusicListEntity = MyMusicListEntity.builder()
-        .listName(listName)
-        .memberId(member)
-        .numberOfMusic(0L)
-        .repeatPlay(false)
-        .randomPlay(false)
-        .regDate(LocalDateTime.now())
-        .build();
-    myMusicListRepository.save(myMusicListEntity);
+    myMusicListRepository.findByMemberIdAndListName(member, listName)
+        .ifPresentOrElse(value -> {
+          throw new DuplicateListException();
+        }, () -> {
+          MyMusicListEntity myMusicListEntity = MyMusicListEntity.builder()
+              .listName(listName)
+              .memberId(member)
+              .numberOfMusic(0L)
+              .repeatPlay(false)
+              .randomPlay(false)
+              .regDate(LocalDateTime.now())
+              .build();
+          myMusicListRepository.save(myMusicListEntity);
+        });
 
     return "리스트 생성 완료.";
   }
@@ -125,18 +109,12 @@ public class MusicServiceImpl implements MusicService {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
 
-    Optional<MyMusicListEntity> byMemberIdAndListName = myMusicListRepository.findByMemberIdAndListName(
-        member, listName);
-    if (byMemberIdAndListName.isEmpty()) {
-      throw new NotFoundMusicListException();
-    }
-    MyMusicListEntity myMusicList = byMemberIdAndListName.get();
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new InvalidTokenException());
+
+    MyMusicListEntity myMusicList = myMusicListRepository.findByMemberIdAndListName(member,
+        listName).orElseThrow(() -> new NotFoundMusicListException());
 
     List<MusicEntity> byListId = musicRepository.findByListId(myMusicList);
     if (!byListId.isEmpty()) {
@@ -162,18 +140,12 @@ public class MusicServiceImpl implements MusicService {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
 
-    Optional<MyMusicListEntity> byMemberId = myMusicListRepository.findByMemberIdAndListName(member,
-        listName);
-    if (byMemberId.isEmpty()) {
-      throw new NotFoundMusicListException();
-    }
-    MyMusicListEntity myMusicList = byMemberId.get();
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new InvalidTokenException());
+
+    MyMusicListEntity myMusicList = myMusicListRepository.findByMemberIdAndListName(member,
+        listName).orElseThrow(() -> new NotFoundMusicListException());
 
     MyMusicListEntity myMusicListEntity = new MyMusicListEntity();
     if (updateRequest.getMusicName().isEmpty()) {
@@ -206,11 +178,9 @@ public class MusicServiceImpl implements MusicService {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
+
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new InvalidTokenException());
 
     List<MyMusicListEntity> byMemberId = myMusicListRepository.findByMemberId(member);
     if (byMemberId.isEmpty()) {
@@ -230,18 +200,12 @@ public class MusicServiceImpl implements MusicService {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
 
-    Optional<MyMusicListEntity> byMemberIdAndListName = myMusicListRepository.findByMemberIdAndListName(
-        member, listName);
-    if (byMemberIdAndListName.isEmpty()) {
-      throw new NotFoundMusicListException();
-    }
-    MyMusicListEntity myMusicList = byMemberIdAndListName.get();
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new InvalidTokenException());
+
+    MyMusicListEntity myMusicList = myMusicListRepository.findByMemberIdAndListName(member,
+        listName).orElseThrow(() -> new NotFoundMusicListException());
 
     return MyMusicListDto.of(myMusicList, musicRepository);
   }
@@ -252,19 +216,12 @@ public class MusicServiceImpl implements MusicService {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
 
-    Optional<MyMusicListEntity> byMemberIdAndListName = myMusicListRepository.findByMemberIdAndListName(
-        member,
-        listName);
-    if (byMemberIdAndListName.isEmpty()) {
-      throw new NotFoundMusicListException();
-    }
-    MyMusicListEntity myMusicList = byMemberIdAndListName.get();
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new InvalidTokenException());
+
+    MyMusicListEntity myMusicList = myMusicListRepository.findByMemberIdAndListName(member,
+        listName).orElseThrow(() -> new NotFoundMusicListException());
 
     // List의 회원정보와 일치하지 않을 때
     if (!myMusicList.getMemberId().getMemberId().equals(member.getMemberId())) {
@@ -276,7 +233,8 @@ public class MusicServiceImpl implements MusicService {
         .musicName(addRequest.getMusicName())
         .musicUrl(addRequest.getMusicUrl())
         .build();
-    musicRepository.save(musicEntity);;
+    musicRepository.save(musicEntity);
+    ;
 
     // 해당하는 뮤직 리스트의 노래 개수를 증가
     MyMusicListEntity myMusicListEntity = myMusicList.toBuilder()
@@ -293,19 +251,12 @@ public class MusicServiceImpl implements MusicService {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
 
-    Optional<MyMusicListEntity> byMemberIdAndListName = myMusicListRepository.findByMemberIdAndListName(
-        member,
-        listName);
-    if (byMemberIdAndListName.isEmpty()) {
-      throw new NotFoundMusicListException();
-    }
-    MyMusicListEntity myMusicList = byMemberIdAndListName.get();
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new InvalidTokenException());
+
+    MyMusicListEntity myMusicList = myMusicListRepository.findByMemberIdAndListName(member,
+        listName).orElseThrow(() -> new NotFoundMusicListException());
 
     // 뮤직 리스트의 기존 재생옵션과 다를 때 재생옵션을 업데이트
     myMusicList.updatePlayOptions(repeatPlay, randomPlay);

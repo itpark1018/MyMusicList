@@ -7,6 +7,8 @@ import com.mymusiclist.backend.post.dto.request.CommentRequest;
 import com.mymusiclist.backend.post.dto.request.PostRequest;
 import com.mymusiclist.backend.post.service.CommentService;
 import com.mymusiclist.backend.post.service.PostService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,13 +29,13 @@ public class PostController {
   private final CommentService commentService;
 
   @PostMapping("/create")
-  public ResponseEntity<String> create(@RequestBody PostRequest postRequest) {
+  public ResponseEntity<String> create(@Valid @RequestBody PostRequest postRequest) {
     String response = postService.create(postRequest);
     return ResponseEntity.ok(response);
   }
 
   @PostMapping("/{postId}/update")
-  public ResponseEntity<String> update(@PathVariable(name = "postId") Long postId,
+  public ResponseEntity<String> update(@Valid @PathVariable(name = "postId") Long postId,
       @RequestBody PostRequest postRequest) {
     String response = postService.update(postId, postRequest);
     return ResponseEntity.ok(response);
@@ -70,7 +72,8 @@ public class PostController {
   }
 
   @GetMapping("/search")
-  public ResponseEntity<List<PostListDto>> search(@RequestParam(name = "keyword") String keyword,
+  public ResponseEntity<List<PostListDto>> search(
+      @Valid @NotNull(message = "검색어가 없으면 안됩니다.") @RequestParam(name = "keyword") String keyword,
       @RequestParam(name = "searchOption") String searchOption) {
     List<PostListDto> response = postService.search(keyword, searchOption);
     return ResponseEntity.ok(response);
@@ -78,8 +81,7 @@ public class PostController {
 
   @PostMapping("/list/{postId}/comment/create")
   public ResponseEntity<String> commentCreate(@PathVariable(name = "postId") Long postId,
-      @RequestBody
-      CommentRequest commentRequest) {
+      @Valid @RequestBody CommentRequest commentRequest) {
     String response = commentService.create(postId, commentRequest);
     return ResponseEntity.ok(response);
   }
@@ -94,7 +96,7 @@ public class PostController {
   @PostMapping("/list/{postId}/comment/update/{commentId}")
   public ResponseEntity<String> commentUpdate(@PathVariable(name = "postId") Long postId,
       @PathVariable(name = "commentId") Long commentId,
-      @RequestBody CommentRequest commentRequest) {
+      @Valid @RequestBody CommentRequest commentRequest) {
     String response = commentService.update(postId, commentId, commentRequest);
     return ResponseEntity.ok(response);
   }

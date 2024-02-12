@@ -34,11 +34,8 @@ public class TokenServiceImpl implements TokenService{
       throw new InvalidTokenException();
     }
 
-    Optional<MemberEntity> byEmail = memberRepository.findByEmail(email);
-    if (byEmail.isEmpty()) {
-      throw new NotFoundMemberException();
-    }
-    MemberEntity member = byEmail.get();
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new InvalidTokenException());
 
     // 새로운 토큰 발급
     TokenDto newToken = jwtTokenProvider.createTokens(member.getEmail(), member.getAdminYn());
