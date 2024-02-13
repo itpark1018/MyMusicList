@@ -4,16 +4,16 @@ import com.mymusiclist.backend.admin.dto.AdminCommentListDto;
 import com.mymusiclist.backend.admin.dto.AdminPostListDto;
 import com.mymusiclist.backend.admin.dto.MemberDetailDto;
 import com.mymusiclist.backend.admin.dto.request.CommentUpdateRequest;
-import com.mymusiclist.backend.admin.dto.request.MemberStatusRequest;
 import com.mymusiclist.backend.admin.dto.request.MemberUpdateRequest;
 import com.mymusiclist.backend.admin.dto.request.PostUpdateRequest;
+import com.mymusiclist.backend.type.MemberStatus;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
 public interface AdminService {
 
-  String setMemberStatus(MemberStatusRequest memberStatusRequest);
+  String setMemberStatus(Long memberId, MemberStatus memberStatus);
 
   MemberDetailDto getMemberInfo(Long memberId);
 

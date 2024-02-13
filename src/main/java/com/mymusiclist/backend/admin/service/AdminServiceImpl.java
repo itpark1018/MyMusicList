@@ -4,7 +4,6 @@ import com.mymusiclist.backend.admin.dto.AdminCommentListDto;
 import com.mymusiclist.backend.admin.dto.AdminPostListDto;
 import com.mymusiclist.backend.admin.dto.MemberDetailDto;
 import com.mymusiclist.backend.admin.dto.request.CommentUpdateRequest;
-import com.mymusiclist.backend.admin.dto.request.MemberStatusRequest;
 import com.mymusiclist.backend.admin.dto.request.MemberUpdateRequest;
 import com.mymusiclist.backend.admin.dto.request.PostUpdateRequest;
 import com.mymusiclist.backend.exception.impl.DuplicateNicknameException;
@@ -42,25 +41,25 @@ public class AdminServiceImpl implements AdminService {
 
   @Override
   @Transactional
-  public String setMemberStatus(MemberStatusRequest memberStatusRequest) {
+  public String setMemberStatus(Long memberId, MemberStatus memberStatus) {
 
-    MemberEntity member = memberRepository.findByMemberId(memberStatusRequest.getMemberId())
+    MemberEntity member = memberRepository.findByMemberId(memberId)
         .orElseThrow(() -> new NotFoundMemberException());
 
     // 회원의 계정을 정지시킬때와 활성화 시킬때에 대한 구분이 필요
-    if (memberStatusRequest.getStatus().equals(MemberStatus.SUSPENDED)) {
+    if (memberStatus.equals(MemberStatus.SUSPENDED)) {
       MemberEntity memberEntity = member.toBuilder()
           .nickname("정지된 회원 " + member.getNickname())
-          .status(memberStatusRequest.getStatus())
+          .status(memberStatus)
           .build();
       memberRepository.save(memberEntity);
 
       // 정지된 회원이 작성한 게시글, 댓글의 닉네임 변경
       updateNicknameInPostsAndComments(memberEntity, "정지된 회원");
-    } else if (memberStatusRequest.getStatus().equals(MemberStatus.ACTIVE)) {
+    } else if (memberStatus.equals(MemberStatus.ACTIVE)) {
       MemberEntity memberEntity = member.toBuilder()
           .nickname(randomNickname())
-          .status(memberStatusRequest.getStatus())
+          .status(memberStatus)
           .build();
       memberRepository.save(memberEntity);
 
@@ -68,8 +67,7 @@ public class AdminServiceImpl implements AdminService {
       updateNicknameInPostsAndComments(memberEntity, memberEntity.getNickname());
     }
 
-    return "memberId: " + member.getMemberId() + " 회원의 상태가 " + memberStatusRequest.getStatus()
-        + "로 변경되었습니다.";
+    return "memberId: " + member.getMemberId() + " 회원의 상태가 " + memberStatus + "로 변경되었습니다.";
   }
 
   @Override

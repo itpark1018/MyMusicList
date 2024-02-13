@@ -12,9 +12,11 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -34,40 +36,40 @@ public class MusicController {
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("/list/create")
+  @PostMapping("/lists")
   public ResponseEntity<String> createList(
       @Valid @NotBlank(message = "뮤직 리스트 이름은 공백일 수 없습니다.") @RequestParam(name = "listName") String listName) {
     String response = musicService.createList(listName);
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("/list/delete")
+  @DeleteMapping("/lists")
   public ResponseEntity<String> deleteList(
       @Valid @NotBlank(message = "뮤직 리스트 이름은 공백일 수 없습니다.") @RequestParam(name = "listName") String listName) {
     String response = musicService.deleteList(listName);
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("/list/{listName}/update")
+  @PutMapping("/lists/{listName}")
   public ResponseEntity<MyMusicListDto> updateList(@PathVariable(name = "listName") String listName,
       @Valid @RequestBody UpdateRequest updateRequest) {
     MyMusicListDto response = musicService.updateList(listName, updateRequest);
     return ResponseEntity.ok(response);
   }
 
-  @GetMapping("/list/myList")
+  @GetMapping("/lists/myList")
   public ResponseEntity<List<String>> getMyList() {
     List<String> response = musicService.getMyList();
     return ResponseEntity.ok(response);
   }
 
-  @GetMapping("/list/{listName}/detail")
+  @GetMapping("/lists/{listName}/detail")
   public ResponseEntity<MyMusicListDto> detail(@PathVariable(name = "listName") String listName) {
     MyMusicListDto response = musicService.detail(listName);
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("list/{listName}/add")
+  @PostMapping("lists/{listName}/add")
   public ResponseEntity<String> addMusic(@PathVariable(name = "listName") String listName,
       @Valid @RequestBody AddRequest addRequest) {
     String response = musicService.addMusic(listName, addRequest);

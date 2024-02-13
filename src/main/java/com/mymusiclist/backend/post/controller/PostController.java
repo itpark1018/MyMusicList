@@ -12,9 +12,11 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,45 +30,45 @@ public class PostController {
   private final PostService postService;
   private final CommentService commentService;
 
-  @PostMapping("/create")
+  @PostMapping
   public ResponseEntity<String> create(@Valid @RequestBody PostRequest postRequest) {
     String response = postService.create(postRequest);
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("/{postId}/update")
+  @PutMapping("/{postId}")
   public ResponseEntity<String> update(@Valid @PathVariable(name = "postId") Long postId,
       @RequestBody PostRequest postRequest) {
     String response = postService.update(postId, postRequest);
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("/{postId}/delete")
+  @DeleteMapping("/{postId}")
   public ResponseEntity<String> delete(@PathVariable(name = "postId") Long postId) {
     String response = postService.delete(postId);
     return ResponseEntity.ok(response);
   }
 
-  @GetMapping("/list")
+  @GetMapping("/lists")
   public ResponseEntity<List<PostListDto>> getList(
       @RequestParam(name = "sortByLikes", defaultValue = "false") Boolean sortByLikes) {
     List<PostListDto> response = postService.getList(sortByLikes);
     return ResponseEntity.ok(response);
   }
 
-  @GetMapping("/list/{postId}")
+  @GetMapping("/lists/{postId}")
   public ResponseEntity<PostDetailDto> getDetail(@PathVariable(name = "postId") Long postId) {
     PostDetailDto response = postService.getDetail(postId);
     return ResponseEntity.ok(response);
   }
 
-  @GetMapping("/myPost")
+  @GetMapping("/my-post")
   public ResponseEntity<List<PostListDto>> getMyPost() {
     List<PostListDto> response = postService.getMyPost();
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("/list/{postId}/like")
+  @PostMapping("/lists/{postId}/like")
   public void postLike(@PathVariable(name = "postId") Long postId) {
     postService.like(postId);
   }
@@ -79,21 +81,21 @@ public class PostController {
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("/list/{postId}/comment/create")
+  @PostMapping("/lists/{postId}/comments")
   public ResponseEntity<String> commentCreate(@PathVariable(name = "postId") Long postId,
       @Valid @RequestBody CommentRequest commentRequest) {
     String response = commentService.create(postId, commentRequest);
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("/list/{postId}/comment/delete/{commentId}")
+  @DeleteMapping("/lists/{postId}/comments/{commentId}")
   public ResponseEntity<String> commentDelete(@PathVariable(name = "postId") Long postId,
       @PathVariable(name = "commentId") Long commentId) {
     String response = commentService.delete(postId, commentId);
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("/list/{postId}/comment/update/{commentId}")
+  @PutMapping("/lists/{postId}/comments/{commentId}")
   public ResponseEntity<String> commentUpdate(@PathVariable(name = "postId") Long postId,
       @PathVariable(name = "commentId") Long commentId,
       @Valid @RequestBody CommentRequest commentRequest) {
@@ -101,7 +103,7 @@ public class PostController {
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("/list/{postId}/comment/{commentId}/like")
+  @PostMapping("/lists/{postId}/comments/{commentId}/like")
   public void commentLike(@PathVariable(name = "postId") Long postId,
       @PathVariable(name = "commentId") Long commentId) {
     commentService.like(postId, commentId);
