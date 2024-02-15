@@ -33,12 +33,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MusicServiceImpl implements MusicService {
@@ -100,6 +102,7 @@ public class MusicServiceImpl implements MusicService {
           myMusicListRepository.save(myMusicListEntity);
         });
 
+    log.info("musicList create user: " + email + ", listName: " + listName);
     return "리스트 생성 완료.";
   }
 
@@ -131,6 +134,7 @@ public class MusicServiceImpl implements MusicService {
     }
     myMusicListRepository.delete(myMusicList);
 
+    log.info("musicList delete user: " + email + ", listName: " + listName);
     return "리스트를 삭제했습니다.";
   }
 
@@ -170,6 +174,8 @@ public class MusicServiceImpl implements MusicService {
       }
     }
 
+    log.info("musicList update user: " + email + ", update content - listName: "
+        + updateRequest.getListName() + ", musicName: " + updateRequest.getMusicName());
     return MyMusicListDto.of(myMusicListEntity, musicRepository);
   }
 
