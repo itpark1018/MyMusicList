@@ -7,7 +7,6 @@ import com.mymusiclist.backend.member.dto.request.LoginRequest;
 import com.mymusiclist.backend.member.dto.request.ResetRequest;
 import com.mymusiclist.backend.member.dto.request.SignUpRequest;
 import com.mymusiclist.backend.member.dto.request.UpdateRequest;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,7 +18,7 @@ public interface MemberService {
 
   TokenDto login(LoginRequest loginRequest);
 
-  void logout(String accessToken);
+  String logout(String accessToken);
 
   String resetPassword(ResetRequest resetRequest);
 

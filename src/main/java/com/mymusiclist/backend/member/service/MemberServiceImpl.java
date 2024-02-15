@@ -35,6 +35,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
@@ -45,6 +46,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MemberServiceImpl implements MemberService {
@@ -127,6 +129,7 @@ public class MemberServiceImpl implements MemberService {
         .orElseThrow(() -> new NotFoundMemberException());
 
     if (!code.equals(member.getAuthCode())) {
+      log.warn("signUpAuth InvalidAuthCodeException: " + email);
       throw new InvalidAuthCodeException();
     }
 
@@ -155,14 +158,16 @@ public class MemberServiceImpl implements MemberService {
     if (passwordEncoder.matches(loginRequest.getPassword(), member.getPassword())) {
       // AccessToken 및 RefreshToken 생성
       TokenDto token = tokenService.create(member.getEmail(), member.getAdminYn());
+      log.info("Token Create: " + loginRequest.getEmail());
       return token;
     } else {
+      log.warn("login InvalidPasswordException: " + loginRequest.getEmail());
       throw new InvalidPasswordException();
     }
   }
 
   @Override
-  public void logout(String accessToken) {
+  public String logout(String accessToken) {
 
     // 로그아웃 하고 싶은 토큰이 유효한지 검증
     if (!jwtTokenProvider.validateToken(accessToken)) {
@@ -183,6 +188,8 @@ public class MemberServiceImpl implements MemberService {
     long accessTokenExpiresIn = expiration - now;
     redisTemplate.opsForValue()
         .set(accessToken, "logout", accessTokenExpiresIn, TimeUnit.MILLISECONDS);
+
+    return authentication.getName();
   }
 
   @Override
@@ -220,6 +227,7 @@ public class MemberServiceImpl implements MemberService {
         .orElseThrow(() -> new NotFoundMemberException());
 
     if (!code.equals(member.getPasswordAuthCode())) {
+      log.warn("passwordAuth InvalidAuthCodeException: " + email);
       throw new InvalidAuthCodeException();
     }
 
@@ -253,7 +261,9 @@ public class MemberServiceImpl implements MemberService {
 
     // 닉네임 중복체크
     memberRepository.findByNicknameAndStatus(updateRequest.getNickname(), MemberStatus.ACTIVE)
-        .orElseThrow(() -> new DuplicateNicknameException());
+        .ifPresent(existing -> {
+          throw new DuplicateNicknameException();
+        });
 
     if (!updateRequest.getNickname().equals(member.getNickname())) {
       // 사용자가 작성한 게시글, 댓글의 닉네임을 새롭게 변경하는 닉네임으로 변경
@@ -290,7 +300,7 @@ public class MemberServiceImpl implements MemberService {
     // 탈퇴하는 회원이 작성한 게시글과, 댓글의 닉네임을 탈퇴한 회원으로 변경
     updateNicknameInPostsAndComments(member, "탈퇴한 회원");
 
-    return "회원탈퇴가 정상적으로 완료되었습니다.";
+    return email;
   }
 
   @Override

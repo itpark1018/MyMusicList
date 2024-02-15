@@ -12,9 +12,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TokenServiceImpl implements TokenService{
@@ -46,6 +48,7 @@ public class TokenServiceImpl implements TokenService{
 
     redisTemplate.opsForValue().set("RT:"+member.getEmail(), newRefreshToken, refreshTokenExpiresIn, TimeUnit.MILLISECONDS);
 
+    log.info("reIssue Token: " + member.getEmail());
     return newToken;
   }
 
