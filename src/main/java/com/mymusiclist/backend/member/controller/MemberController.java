@@ -18,9 +18,11 @@ import com.mymusiclist.backend.member.dto.parameter.SignUpParameter;
 import com.mymusiclist.backend.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/member")
+@RequestMapping("/members")
 public class MemberController {
 
   private final MemberService memberService;
@@ -53,14 +55,15 @@ public class MemberController {
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("/logout")
-  public void logout(HttpServletRequest request) {
+  @DeleteMapping("/logout")
+  public ResponseEntity<String> logout(HttpServletRequest request) {
     String accessToken = request.getHeader("Authorization");
     if (accessToken != null && accessToken.startsWith("Bearer ")) {
       accessToken = accessToken.substring(7); // "Bearer " 이후의 토큰 값만 추출
     }
 
     memberService.logout(accessToken);
+    return ResponseEntity.ok("로그아웃 완료");
   }
 
   @PostMapping("/reissue")
@@ -83,19 +86,19 @@ public class MemberController {
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("/update")
-  public ResponseEntity<MemberDto> update(@Valid @RequestBody UpdateRequest updateRequest) {
-    MemberDto response = memberService.update(updateRequest);
-    return ResponseEntity.ok(response);
-  }
-
-  @PostMapping("/withdrawal")
+  @DeleteMapping("/withdrawal")
   public ResponseEntity<String> withdrawal() {
     String response = memberService.withdrawal();
     return ResponseEntity.ok(response);
   }
 
-  @GetMapping("/myInfo")
+  @PutMapping("/my-info")
+  public ResponseEntity<MemberDto> update(@Valid @RequestBody UpdateRequest updateRequest) {
+    MemberDto response = memberService.update(updateRequest);
+    return ResponseEntity.ok(response);
+  }
+
+  @GetMapping("/my-info")
   public ResponseEntity<MemberDto> myInfo() {
     MemberDto response = memberService.myInfo();
     return ResponseEntity.ok(response);

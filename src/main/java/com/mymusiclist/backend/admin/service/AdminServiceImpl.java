@@ -4,9 +4,10 @@ import com.mymusiclist.backend.admin.dto.AdminCommentListDto;
 import com.mymusiclist.backend.admin.dto.AdminPostListDto;
 import com.mymusiclist.backend.admin.dto.MemberDetailDto;
 import com.mymusiclist.backend.admin.dto.request.CommentUpdateRequest;
-import com.mymusiclist.backend.admin.dto.request.MemberStatusRequest;
 import com.mymusiclist.backend.admin.dto.request.MemberUpdateRequest;
 import com.mymusiclist.backend.admin.dto.request.PostUpdateRequest;
+import com.mymusiclist.backend.exception.impl.DuplicateNicknameException;
+import com.mymusiclist.backend.exception.impl.InvalidSearchOptionException;
 import com.mymusiclist.backend.exception.impl.NotFoundMemberException;
 import com.mymusiclist.backend.member.domain.MemberEntity;
 import com.mymusiclist.backend.member.repository.MemberRepository;
@@ -18,6 +19,7 @@ import com.mymusiclist.backend.post.service.CommentService;
 import com.mymusiclist.backend.post.service.PostService;
 import com.mymusiclist.backend.type.MemberStatus;
 import com.mymusiclist.backend.type.SearchOption;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -39,25 +41,25 @@ public class AdminServiceImpl implements AdminService {
 
   @Override
   @Transactional
-  public String setMemberStatus(MemberStatusRequest memberStatusRequest) {
+  public String setMemberStatus(Long memberId, MemberStatus memberStatus) {
 
-    MemberEntity member = memberRepository.findByMemberId(memberStatusRequest.getMemberId())
+    MemberEntity member = memberRepository.findByMemberId(memberId)
         .orElseThrow(() -> new NotFoundMemberException());
 
     // 회원의 계정을 정지시킬때와 활성화 시킬때에 대한 구분이 필요
-    if (memberStatusRequest.getStatus().equals(MemberStatus.SUSPENDED)) {
+    if (memberStatus.equals(MemberStatus.SUSPENDED)) {
       MemberEntity memberEntity = member.toBuilder()
           .nickname("정지된 회원 " + member.getNickname())
-          .status(memberStatusRequest.getStatus())
+          .status(memberStatus)
           .build();
       memberRepository.save(memberEntity);
 
       // 정지된 회원이 작성한 게시글, 댓글의 닉네임 변경
       updateNicknameInPostsAndComments(memberEntity, "정지된 회원");
-    } else if (memberStatusRequest.getStatus().equals(MemberStatus.ACTIVE)) {
+    } else if (memberStatus.equals(MemberStatus.ACTIVE)) {
       MemberEntity memberEntity = member.toBuilder()
           .nickname(randomNickname())
-          .status(memberStatusRequest.getStatus())
+          .status(memberStatus)
           .build();
       memberRepository.save(memberEntity);
 
@@ -65,8 +67,7 @@ public class AdminServiceImpl implements AdminService {
       updateNicknameInPostsAndComments(memberEntity, memberEntity.getNickname());
     }
 
-    return "memberId: " + member.getMemberId() + " 회원의 상태가 " + memberStatusRequest.getStatus()
-        + "로 변경되었습니다.";
+    return "memberId: " + member.getMemberId() + " 회원의 상태가 " + memberStatus + "로 변경되었습니다.";
   }
 
   @Override
@@ -85,10 +86,18 @@ public class AdminServiceImpl implements AdminService {
     MemberEntity member = memberRepository.findByMemberId(memberUpdateRequest.getMemberId())
         .orElseThrow(() -> new NotFoundMemberException());
 
+    if (!memberUpdateRequest.getNickname().isEmpty()) {
+      memberRepository.findByNicknameAndStatus(memberUpdateRequest.getNickname(),
+          MemberStatus.ACTIVE).ifPresent(item -> {
+        throw new DuplicateNicknameException();
+      });
+    }
+
     MemberEntity memberEntity = member.toBuilder()
         .nickname(memberUpdateRequest.getNickname())
         .imageUrl(memberUpdateRequest.getImageUrl())
         .introduction(memberUpdateRequest.getIntroduction())
+        .modDate(LocalDateTime.now())
         .build();
     memberRepository.save(memberEntity);
 
@@ -96,23 +105,25 @@ public class AdminServiceImpl implements AdminService {
   }
 
   @Override
-  public List<MemberDetailDto> searchName(String name) {
+  public List<MemberDetailDto> searchMember(String keyword, String searchOption) {
 
-    List<MemberEntity> byName = memberRepository.findByName(name);
-    if (byName.isEmpty()) {
-      throw new NotFoundMemberException();
+    if (searchOption.equals(SearchOption.NAME.getValue())) {
+      List<MemberEntity> byName = memberRepository.findByName(keyword);
+      if (byName.isEmpty()) {
+        throw new NotFoundMemberException();
+      }
+
+      return MemberDetailDto.listOf(byName);
+    } else if (searchOption.equals(SearchOption.NICKNAME.getValue())) {
+      MemberEntity member = memberRepository.findByNickname(keyword)
+          .orElseThrow(() -> new NotFoundMemberException());
+
+      List<MemberDetailDto> list = new ArrayList<>();
+      list.add(MemberDetailDto.of(member));
+      return list;
     }
 
-    return MemberDetailDto.listOf(byName);
-  }
-
-  @Override
-  public MemberDetailDto searchNickname(String nickname) {
-
-    MemberEntity member = memberRepository.findByNickname(nickname)
-        .orElseThrow(() -> new NotFoundMemberException());
-
-    return MemberDetailDto.of(member);
+    throw new InvalidSearchOptionException();
   }
 
   @Override
