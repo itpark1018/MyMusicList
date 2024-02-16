@@ -129,7 +129,7 @@ public class MemberServiceImpl implements MemberService {
         .orElseThrow(() -> new NotFoundMemberException());
 
     if (!code.equals(member.getAuthCode())) {
-      log.warn("signUpAuth InvalidAuthCodeException: " + email);
+      log.warn("signUpAuth InvalidAuthCodeException: {}", email);
       throw new InvalidAuthCodeException();
     }
 
@@ -158,10 +158,10 @@ public class MemberServiceImpl implements MemberService {
     if (passwordEncoder.matches(loginRequest.getPassword(), member.getPassword())) {
       // AccessToken 및 RefreshToken 생성
       TokenDto token = tokenService.create(member.getEmail(), member.getAdminYn());
-      log.info("Token Create: " + loginRequest.getEmail());
+      log.info("token create: {}", loginRequest.getEmail());
       return token;
     } else {
-      log.warn("login InvalidPasswordException: " + loginRequest.getEmail());
+      log.warn("login InvalidPasswordException: {}", loginRequest.getEmail());
       throw new InvalidPasswordException();
     }
   }
@@ -227,7 +227,7 @@ public class MemberServiceImpl implements MemberService {
         .orElseThrow(() -> new NotFoundMemberException());
 
     if (!code.equals(member.getPasswordAuthCode())) {
-      log.warn("passwordAuth InvalidAuthCodeException: " + email);
+      log.warn("passwordAuth InvalidAuthCodeException: {}", email);
       throw new InvalidAuthCodeException();
     }
 

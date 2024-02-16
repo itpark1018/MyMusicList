@@ -34,7 +34,7 @@ public class SecurityConfiguration {
                 .requestMatchers("/members/my-info", "/members/info/**", "/members/logout",
                     "/members/withdrawal",
                     "/music/search", "/music/lists/**",
-                    "/music/playList/**", "/post/**").hasRole("USER")
+                    "/music/playList/**", "/posts/**").hasRole("USER")
                 .requestMatchers("/admin/**").hasRole("ADMIN"))
         .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(
             SessionCreationPolicy.STATELESS))

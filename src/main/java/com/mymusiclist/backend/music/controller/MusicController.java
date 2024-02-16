@@ -35,7 +35,7 @@ public class MusicController {
   public ResponseEntity<List<YoutubeSearchDto>> search(
       @Valid @NotNull(message = "검색어가 없으면 안됩니다.") @RequestParam(name = "keyword") String keyword) {
     List<YoutubeSearchDto> response = musicService.search(keyword);
-    log.info("Music searchKeyword: " + keyword);
+    log.info("Music searchKeyword: {}", keyword);
     return ResponseEntity.ok(response);
   }
 

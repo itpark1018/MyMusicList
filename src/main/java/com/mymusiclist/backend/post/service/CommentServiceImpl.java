@@ -23,12 +23,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CommentServiceImpl implements CommentService {
@@ -79,6 +81,8 @@ public class CommentServiceImpl implements CommentService {
         .build();
     postRepository.save(postEntity);
 
+    log.info("comment write user: {}, postId: {}, comment: {}", email, postId,
+        commentRequest.getComment());
     return "댓글 작성완료.";
   }
 
@@ -91,16 +95,22 @@ public class CommentServiceImpl implements CommentService {
     CommentEntity comment = new CommentEntity();
     PostEntity post = new PostEntity();
 
+    String email = null;
+
     if (authentication.getAuthorities().stream()
         .map(GrantedAuthority::getAuthority)
         .anyMatch(role -> role.equals("ROLE_ADMIN"))) {
       // admin 권한이 있을 때
-      comment = commentRepository.findByCommentId(commentId).orElseThrow(() -> new NotFoundCommentException());
+      comment = commentRepository.findByCommentId(commentId)
+          .orElseThrow(() -> new NotFoundCommentException());
 
-      post = postRepository.findByPostId(comment.getPostId().getPostId()).orElseThrow(() ->  new NotFoundPostException());
+      post = postRepository.findByPostId(comment.getPostId().getPostId())
+          .orElseThrow(() -> new NotFoundPostException());
+
+      email = authentication.getName();
     } else {
       // admin 권한이 없을 때
-      String email = authentication.getName();
+      email = authentication.getName();
       MemberEntity member = memberRepository.findByEmail(email)
           .orElseThrow(() -> new InvalidTokenException());
 
@@ -132,6 +142,14 @@ public class CommentServiceImpl implements CommentService {
         .build();
     postRepository.save(postEntity);
 
+    if (authentication.getAuthorities().stream()
+        .map(GrantedAuthority::getAuthority)
+        .anyMatch(role -> role.equals("ROLE_ADMIN"))) {
+      log.info("comment delete admin: {}, postId: {}, commentId: {}", email, postId, commentId);
+    } else {
+      log.info("comment delete user: {}, postId: {}, commentId: {}", email, postId, commentId);
+    }
+
     return "댓글 삭제완료";
   }
 
@@ -143,17 +161,24 @@ public class CommentServiceImpl implements CommentService {
 
     CommentEntity comment = new CommentEntity();
 
+    String email = null;
+
     if (authentication.getAuthorities().stream()
         .map(GrantedAuthority::getAuthority)
         .anyMatch(role -> role.equals("ROLE_ADMIN"))) {
       // admin 권한이 있을 때
-      comment = commentRepository.findByCommentId(commentId).orElseThrow(() -> new NotFoundCommentException());
+      comment = commentRepository.findByCommentId(commentId)
+          .orElseThrow(() -> new NotFoundCommentException());
+
+      email = authentication.getName();
     } else {
       // admin 권한이 없을 때
-      String email = authentication.getName();
-      MemberEntity member = memberRepository.findByEmail(email).orElseThrow(() -> new InvalidTokenException());
+      email = authentication.getName();
+      MemberEntity member = memberRepository.findByEmail(email)
+          .orElseThrow(() -> new InvalidTokenException());
 
-      PostEntity post = postRepository.findByPostId(postId).orElseThrow(() -> new NotFoundPostException());
+      PostEntity post = postRepository.findByPostId(postId)
+          .orElseThrow(() -> new NotFoundPostException());
       if (post.getStatus().equals(PostStatus.DELETED)) {
         throw new DeletePostException();
       }
@@ -171,6 +196,16 @@ public class CommentServiceImpl implements CommentService {
         .build();
     commentRepository.save(commentEntity);
 
+    if (authentication.getAuthorities().stream()
+        .map(GrantedAuthority::getAuthority)
+        .anyMatch(role -> role.equals("ROLE_ADMIN"))) {
+      log.info("comment update admin: {}, postId: {}, commentId: {}, update comment: {}", email,
+          postId, commentId, commentRequest.getComment());
+    } else {
+      log.info("comment update user: {}, postId: {}, commentId: {}, update comment: {}", email,
+          postId, commentId, commentRequest.getComment());
+    }
+
     return "댓글 수정완료";
   }
 
@@ -181,9 +216,11 @@ public class CommentServiceImpl implements CommentService {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
 
-    MemberEntity member = memberRepository.findByEmail(email).orElseThrow(() -> new InvalidTokenException());
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new InvalidTokenException());
 
-    PostEntity post = postRepository.findByPostId(postId).orElseThrow(() -> new NotFoundPostException());
+    PostEntity post = postRepository.findByPostId(postId)
+        .orElseThrow(() -> new NotFoundPostException());
     if (post.getStatus().equals(PostStatus.DELETED)) {
       throw new DeletePostException();
     }
@@ -210,6 +247,8 @@ public class CommentServiceImpl implements CommentService {
           .memberId(member)
           .build();
       commentLikeRepository.save(commentLikeEntity);
+
+      log.info("post like user: {}, postId: {}, commentId{}", email, postId, commentId);
     } else {
       CommentEntity commentEntity = comment.toBuilder()
           .likeCnt(comment.getLikeCnt() - 1)
@@ -218,6 +257,8 @@ public class CommentServiceImpl implements CommentService {
 
       CommentLikeEntity commentLikeEntity = byCommentIdAndMemberId.get();
       commentLikeRepository.delete(commentLikeEntity);
+
+      log.info("post like cancel user: {}, postId: {}, commentId{}", email, postId, commentId);
     }
   }
 
@@ -227,7 +268,8 @@ public class CommentServiceImpl implements CommentService {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
 
-    MemberEntity member = memberRepository.findByEmail(email).orElseThrow(() -> new InvalidTokenException());
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new InvalidTokenException());
 
     List<CommentEntity> commentList = commentRepository.findAllByMemberIdAndStatus(member,
         CommentStatus.ACTIVE);

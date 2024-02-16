@@ -48,7 +48,7 @@ public class TokenServiceImpl implements TokenService{
 
     redisTemplate.opsForValue().set("RT:"+member.getEmail(), newRefreshToken, refreshTokenExpiresIn, TimeUnit.MILLISECONDS);
 
-    log.info("reIssue Token: " + member.getEmail());
+    log.info("reIssue token: {}", member.getEmail());
     return newToken;
   }
 

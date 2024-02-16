@@ -45,14 +45,14 @@ public class MemberController {
   public ResponseEntity<String> auth(@RequestParam(name = "email") String email,
       @RequestParam(name = "code") String code) {
     String response = memberService.auth(email, code);
-    log.info("Authentication successful for email: " + email);
+    log.info("Authentication successful for email: {}", email);
     return ResponseEntity.ok(response);
   }
 
   @PostMapping("/login")
   public ResponseEntity<TokenDto> login(@Valid @RequestBody LoginRequest loginRequest) {
     TokenDto response = memberService.login(loginRequest);
-    log.info("login user: " + loginRequest.getEmail());
+    log.info("login user: {}", loginRequest.getEmail());
     return ResponseEntity.ok(response);
   }
 
@@ -63,7 +63,7 @@ public class MemberController {
       accessToken = accessToken.substring(7); // "Bearer " 이후의 토큰 값만 추출
     }
     String email = memberService.logout(accessToken);
-    log.info("logout user: " + email);
+    log.info("logout user: {}", email);
     return ResponseEntity.ok("로그아웃 완료");
   }
 
@@ -84,25 +84,23 @@ public class MemberController {
       @RequestParam(name = "code") String code,
       @RequestParam(name = "resetPassword") String resetPassword) {
     String response = memberService.passwordAuth(email, code, resetPassword);
-    log.info("resetPassword user: " + email);
+    log.info("resetPassword user: {}", email);
     return ResponseEntity.ok(response);
   }
 
   @DeleteMapping("/withdrawal")
   public ResponseEntity<String> withdrawal() {
     String email = memberService.withdrawal();
-    log.info("withdrawal user: " + email);
+    log.info("withdrawal user: {}", email);
     return ResponseEntity.ok("회원탈퇴가 정상적으로 완료되었습니다.");
   }
 
   @PutMapping("/my-info")
   public ResponseEntity<MemberDto> update(@Valid @RequestBody UpdateRequest updateRequest) {
     MemberDto response = memberService.update(updateRequest);
-    log.info("update user: " + response.getEmail() +
-        ", update content - nickname: " + updateRequest.getNickname() +
-        ", imageUrl: " + updateRequest.getImageUrl() + ", introduction: "
-        + updateRequest.getIntroduction());
-
+    log.info("update user: {}, update content - nickname: {}, imageUrl: {}, introduction: {}",
+        response.getEmail(), updateRequest.getNickname(), updateRequest.getImageUrl(),
+        updateRequest.getIntroduction());
     return ResponseEntity.ok(response);
   }
 

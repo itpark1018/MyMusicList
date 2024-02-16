@@ -1,9 +1,5 @@
 package com.mymusiclist.backend.music.service;
 
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.services.youtube.YouTube;
-import com.google.api.services.youtube.model.SearchListResponse;
 import com.google.api.services.youtube.model.SearchResult;
 import com.mymusiclist.backend.exception.impl.DuplicateListException;
 import com.mymusiclist.backend.exception.impl.InvalidTokenException;
@@ -26,15 +22,11 @@ import com.mymusiclist.backend.music.youtube.YoutubeClient;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -102,7 +94,7 @@ public class MusicServiceImpl implements MusicService {
           myMusicListRepository.save(myMusicListEntity);
         });
 
-    log.info("musicList create user: " + email + ", listName: " + listName);
+    log.info("musicList create user: {}, listName: {}", email, listName);
     return "리스트 생성 완료.";
   }
 
@@ -134,7 +126,7 @@ public class MusicServiceImpl implements MusicService {
     }
     myMusicListRepository.delete(myMusicList);
 
-    log.info("musicList delete user: " + email + ", listName: " + listName);
+    log.info("musicList delete user: {}, listName: {}", email, listName);
     return "리스트를 삭제했습니다.";
   }
 
@@ -174,8 +166,8 @@ public class MusicServiceImpl implements MusicService {
       }
     }
 
-    log.info("musicList update user: " + email + ", update content - listName: "
-        + updateRequest.getListName() + ", musicName: " + updateRequest.getMusicName());
+    log.info("musicList update user: {}, update content - listName: {}, musicName: {}", email,
+        updateRequest.getListName(), updateRequest.getMusicName());
     return MyMusicListDto.of(myMusicListEntity, musicRepository);
   }
 
