@@ -15,6 +15,7 @@ import com.mymusiclist.backend.music.dto.MyMusicListDto;
 import com.mymusiclist.backend.music.dto.PlayListDto;
 import com.mymusiclist.backend.music.dto.YoutubeSearchDto;
 import com.mymusiclist.backend.music.dto.request.AddRequest;
+import com.mymusiclist.backend.music.dto.request.DeleteRequest;
 import com.mymusiclist.backend.music.dto.request.UpdateRequest;
 import com.mymusiclist.backend.music.repository.MusicRepository;
 import com.mymusiclist.backend.music.repository.MyMusicListRepository;
@@ -241,6 +242,38 @@ public class MusicServiceImpl implements MusicService {
     myMusicListRepository.save(myMusicListEntity);
 
     return "해당 리스트에 노래를 추가했습니다.";
+  }
+
+  @Override
+  public String deleteMusic(String listName, DeleteRequest deleteRequest) {
+
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    String email = authentication.getName();
+
+    MemberEntity member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new InvalidTokenException());
+
+    MyMusicListEntity myMusicList = myMusicListRepository.findByMemberIdAndListName(member,
+        listName).orElseThrow(() -> new NotFoundMusicListException());
+
+    // List의 회원정보와 일치하지 않을 때
+    if (!myMusicList.getMemberId().getMemberId().equals(member.getMemberId())) {
+      throw new MemberIdMismatchException();
+    }
+
+    for (Long id : deleteRequest.getMusicId()) {
+      MusicEntity music = musicRepository.findByListIdAndMusicId(myMusicList, id)
+          .orElseThrow(() -> new NotFoundMusicException());
+
+      musicRepository.delete(music);
+
+      MyMusicListEntity myMusicListEntity = myMusicList.toBuilder()
+          .numberOfMusic(myMusicList.getNumberOfMusic() - 1)
+          .build();
+      myMusicListRepository.save(myMusicListEntity);
+    }
+
+    return "해당 리스트에 노래를 제거했습니다.";
   }
 
   @Override

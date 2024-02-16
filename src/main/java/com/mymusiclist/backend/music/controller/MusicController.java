@@ -4,6 +4,7 @@ import com.mymusiclist.backend.music.dto.MyMusicListDto;
 import com.mymusiclist.backend.music.dto.PlayListDto;
 import com.mymusiclist.backend.music.dto.YoutubeSearchDto;
 import com.mymusiclist.backend.music.dto.request.AddRequest;
+import com.mymusiclist.backend.music.dto.request.DeleteRequest;
 import com.mymusiclist.backend.music.dto.request.UpdateRequest;
 import com.mymusiclist.backend.music.service.MusicService;
 import jakarta.validation.Valid;
@@ -72,10 +73,17 @@ public class MusicController {
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("lists/{listName}/add")
+  @PostMapping("lists/{listName}/music")
   public ResponseEntity<String> addMusic(@PathVariable(name = "listName") String listName,
       @Valid @RequestBody AddRequest addRequest) {
     String response = musicService.addMusic(listName, addRequest);
+    return ResponseEntity.ok(response);
+  }
+
+  @DeleteMapping("lists/{listName}/music")
+  public ResponseEntity<String> deleteMusic(@PathVariable(name = "listName") String listName,
+      @RequestBody @NotNull(message = "노래 식별자는 NULL 일 수 없습니다.") DeleteRequest deleteRequest) {
+    String response = musicService.deleteMusic(listName, deleteRequest);
     return ResponseEntity.ok(response);
   }
 

@@ -21,6 +21,7 @@ public class MyMusicListDto {
 
   private String listName;
   private Long numberOfMusic;
+  private List<Long> musicId;
   private List<String> musicName;
   private Boolean repeatPlay;
   private Boolean randomPlay;
@@ -30,6 +31,11 @@ public class MyMusicListDto {
 
     List<MusicEntity> musicEntities  = musicRepository.findByListId(myMusicListEntity);
 
+    List<Long> musicId = new ArrayList<>();
+    for (MusicEntity musicEntity: musicEntities) {
+      musicId.add(musicEntity.getMusicId());
+    }
+
     List<String> musicName = new ArrayList<>();
     for (MusicEntity musicEntity : musicEntities) {
       musicName.add(musicEntity.getMusicName());
@@ -38,6 +44,7 @@ public class MyMusicListDto {
     return MyMusicListDto.builder()
         .listName(myMusicListEntity.getListName())
         .numberOfMusic(myMusicListEntity.getNumberOfMusic())
+        .musicId(musicId)
         .musicName(musicName)
         .repeatPlay(myMusicListEntity.getRepeatPlay())
         .randomPlay(myMusicListEntity.getRandomPlay())
