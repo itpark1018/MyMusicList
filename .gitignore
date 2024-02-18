@@ -38,3 +38,6 @@ out/
 *.yaml
 *.properties
 README.md
+*.log
+*.gz
+.gitignore

@@ -17,7 +17,7 @@ public interface AdminService {
 
   MemberDetailDto getMemberInfo(Long memberId);
 
-  String memberUpdate(MemberUpdateRequest memberUpdateRequest);
+  String memberUpdate(Long memberId, MemberUpdateRequest memberUpdateRequest);
 
   List<MemberDetailDto> searchMember(String keyword, String searchOption);
 

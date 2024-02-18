@@ -26,9 +26,13 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminServiceImpl implements AdminService {
@@ -67,6 +71,12 @@ public class AdminServiceImpl implements AdminService {
       updateNicknameInPostsAndComments(memberEntity, memberEntity.getNickname());
     }
 
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    String email = authentication.getName();
+
+    log.info("memberStatus update admin: {}, memberId: {}, memberStatus: {}", email, memberId,
+        memberStatus);
+
     return "memberId: " + member.getMemberId() + " 회원의 상태가 " + memberStatus + "로 변경되었습니다.";
   }
 
@@ -81,9 +91,9 @@ public class AdminServiceImpl implements AdminService {
 
   @Override
   @Transactional
-  public String memberUpdate(MemberUpdateRequest memberUpdateRequest) {
+  public String memberUpdate(Long memberId, MemberUpdateRequest memberUpdateRequest) {
 
-    MemberEntity member = memberRepository.findByMemberId(memberUpdateRequest.getMemberId())
+    MemberEntity member = memberRepository.findByMemberId(memberId)
         .orElseThrow(() -> new NotFoundMemberException());
 
     if (!memberUpdateRequest.getNickname().isEmpty()) {
@@ -101,7 +111,16 @@ public class AdminServiceImpl implements AdminService {
         .build();
     memberRepository.save(memberEntity);
 
-    return "memberId: " + memberUpdateRequest.getMemberId() + " 회원 정보 수정완료.";
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    String email = authentication.getName();
+
+    log.info(
+        "memberUpdate admin: {}, memberId: {}, update content - nickname: {}, imageUrl: {}, introduction: {}",
+        email, memberId, memberUpdateRequest.getNickname(),
+        memberUpdateRequest.getImageUrl(), memberUpdateRequest.getImageUrl(),
+        memberUpdateRequest.getIntroduction());
+
+    return "memberId: " + memberId + " 회원 정보 수정완료.";
   }
 
   @Override

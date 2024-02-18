@@ -4,6 +4,7 @@ import com.mymusiclist.backend.music.dto.MyMusicListDto;
 import com.mymusiclist.backend.music.dto.PlayListDto;
 import com.mymusiclist.backend.music.dto.YoutubeSearchDto;
 import com.mymusiclist.backend.music.dto.request.AddRequest;
+import com.mymusiclist.backend.music.dto.request.DeleteRequest;
 import com.mymusiclist.backend.music.dto.request.UpdateRequest;
 import com.mymusiclist.backend.music.service.MusicService;
 import jakarta.validation.Valid;
@@ -11,6 +12,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/music")
@@ -33,6 +36,7 @@ public class MusicController {
   public ResponseEntity<List<YoutubeSearchDto>> search(
       @Valid @NotNull(message = "검색어가 없으면 안됩니다.") @RequestParam(name = "keyword") String keyword) {
     List<YoutubeSearchDto> response = musicService.search(keyword);
+    log.info("Music searchKeyword: {}", keyword);
     return ResponseEntity.ok(response);
   }
 
@@ -69,10 +73,17 @@ public class MusicController {
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("lists/{listName}/add")
+  @PostMapping("lists/{listName}/music")
   public ResponseEntity<String> addMusic(@PathVariable(name = "listName") String listName,
       @Valid @RequestBody AddRequest addRequest) {
     String response = musicService.addMusic(listName, addRequest);
+    return ResponseEntity.ok(response);
+  }
+
+  @DeleteMapping("lists/{listName}/music")
+  public ResponseEntity<String> deleteMusic(@PathVariable(name = "listName") String listName,
+      @RequestBody @NotNull(message = "노래 식별자는 NULL 일 수 없습니다.") DeleteRequest deleteRequest) {
+    String response = musicService.deleteMusic(listName, deleteRequest);
     return ResponseEntity.ok(response);
   }
 

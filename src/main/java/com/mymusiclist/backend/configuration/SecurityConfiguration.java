@@ -28,16 +28,13 @@ public class SecurityConfiguration {
     return http.csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
             requests -> requests
-                .requestMatchers("/", "/member/signup", "/member/auth",
-                    "/member/login", "/member/logout", "/member/reissue", "/member/password/**",
-                    "/post/list/**", "/post/search")
-                .permitAll()
-                .requestMatchers("/member/update", "/member/myInfo", "/member/info/**",
-                    "/member/withdrawal",
-                    "/music/search", "/music/list/**",
-                    "/music/playList/**", "/post/create", "/post/**/delete", "/post/**/update",
-                    "/post/myPost", "/post/list/**/like",
-                    "/post/list/**/comment/**").hasRole("USER")
+                .requestMatchers("/", "/members/signup", "/members/auth",
+                    "/members/login", "/members/reissue", "/members/password/**",
+                    "/posts/lists/**", "/posts/search").permitAll()
+                .requestMatchers("/members/my-info", "/members/info/**", "/members/logout",
+                    "/members/withdrawal",
+                    "/music/search", "/music/lists/**",
+                    "/music/playList/**", "/posts/**").hasRole("USER")
                 .requestMatchers("/admin/**").hasRole("ADMIN"))
         .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(
             SessionCreationPolicy.STATELESS))

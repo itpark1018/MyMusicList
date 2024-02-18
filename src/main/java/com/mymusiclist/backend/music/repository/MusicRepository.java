@@ -15,4 +15,6 @@ public interface MusicRepository extends JpaRepository<MusicEntity, Long> {
   Optional<MusicEntity> findByMusicNameAndListId(String musicName, MyMusicListEntity listId);
 
   List<MusicEntity> findByListId(MyMusicListEntity myMusicList);
+
+  Optional<MusicEntity> findByListIdAndMusicId(MyMusicListEntity myMusicList, Long id);
 }

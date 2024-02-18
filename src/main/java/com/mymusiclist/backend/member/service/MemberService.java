@@ -22,7 +22,7 @@ public interface MemberService {
 
   TokenDto login(LoginRequest loginRequest);
 
-  void logout(String accessToken);
+  String logout(String accessToken);
 
   String resetPassword(ResetRequest resetRequest);
 

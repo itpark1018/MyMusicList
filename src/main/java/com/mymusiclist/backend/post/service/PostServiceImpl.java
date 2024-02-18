@@ -35,12 +35,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PostServiceImpl implements PostService {
@@ -83,6 +85,10 @@ public class PostServiceImpl implements PostService {
         .build();
     postRepository.save(postEntity);
 
+    log.info(
+        "post write admin: {}, post content - title: {}, content: {}, listName: {}",
+        email, postRequest.getTitle(), postRequest.getContent(), postRequest.getListName());
+
     return "게시글이 작성되었습니다.";
   }
 
@@ -95,6 +101,8 @@ public class PostServiceImpl implements PostService {
     MemberEntity member = new MemberEntity();
     PostEntity post = new PostEntity();
     MyMusicListEntity myMusicList = null;
+
+    String email = null;
 
     if (authentication.getAuthorities().stream()
         .map(GrantedAuthority::getAuthority)
@@ -112,10 +120,10 @@ public class PostServiceImpl implements PostService {
         myMusicList = myMusicListRepository.findByMemberIdAndListName(member,
             postRequest.getListName()).orElseThrow(() -> new NotFoundMusicListException());
       }
-
+      email = authentication.getName();
     } else {
       // admin 권한이 없을 때
-      String email = authentication.getName();
+      email = authentication.getName();
       member = memberRepository.findByEmail(email).orElseThrow(() -> new InvalidTokenException());
 
       // 게시글이 존재하는지 확인
@@ -146,6 +154,20 @@ public class PostServiceImpl implements PostService {
         .build();
     postRepository.save(postEntity);
 
+    if (authentication.getAuthorities().stream()
+        .map(GrantedAuthority::getAuthority)
+        .anyMatch(role -> role.equals("ROLE_ADMIN"))) {
+      log.info(
+          "post update admin: {}, postId: {}, post content - title: {}, content: {}, listName: {}",
+          email, postId, postRequest.getTitle(), postRequest.getContent(),
+          postRequest.getListName());
+    } else {
+      log.info(
+          "post update user: {}, postId: {}, post content - title: {}, content: {}, listName: {}",
+          email, postId, postRequest.getTitle(), postRequest.getContent(),
+          postRequest.getListName());
+    }
+
     return "게시글을 수정했습니다.";
   }
 
@@ -158,14 +180,17 @@ public class PostServiceImpl implements PostService {
     MemberEntity member = new MemberEntity();
     PostEntity post = new PostEntity();
 
+    String email = null;
+
     if (authentication.getAuthorities().stream()
         .map(GrantedAuthority::getAuthority)
         .anyMatch(role -> role.equals("ROLE_ADMIN"))) {
       // admin 권한이 있을 때
+      email = authentication.getName();
       post = postRepository.findByPostId(postId).orElseThrow(() -> new NotFoundPostException());
     } else {
       // admin 권한이 없을 때
-      String email = authentication.getName();
+      email = authentication.getName();
       member = memberRepository.findByEmail(email).orElseThrow(() -> new InvalidTokenException());
 
       post = postRepository.findByPostIdAndMemberId(postId, member)
@@ -203,6 +228,14 @@ public class PostServiceImpl implements PostService {
     // 게시글이 처리되었으면 해당 게시글 모든 댓글의 추천(좋아요)도 모두 삭제 처리해줘야한다.
     List<CommentLikeEntity> deleteCommentLikes = commentLikeRepository.findByPostId(post);
     commentLikeRepository.deleteAll(deleteCommentLikes);
+
+    if (authentication.getAuthorities().stream()
+        .map(GrantedAuthority::getAuthority)
+        .anyMatch(role -> role.equals("ROLE_ADMIN"))) {
+      log.info("post delete admin: {}, postId: {}", email, postId);
+    } else {
+      log.info("post delete user: {}, postId: {}", email, postId);
+    }
 
     return "해당 게시글이 삭제되었습니다.";
   }
@@ -296,6 +329,8 @@ public class PostServiceImpl implements PostService {
           .memberId(member)
           .build();
       postLikeRepository.save(postLikeEntity);
+
+      log.info("post like user: {}, postId: {}", email, postId);
     } else {
       PostEntity postEntity = post.toBuilder()
           .likeCnt(post.getLikeCnt() - 1)
@@ -304,6 +339,8 @@ public class PostServiceImpl implements PostService {
 
       PostLikeEntity postLikeEntity = byPostIdAndMemberId.get();
       postLikeRepository.delete(postLikeEntity);
+
+      log.info("post like cancel user: {}, postId: {}", email, postId);
     }
   }
 

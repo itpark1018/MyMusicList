@@ -4,6 +4,7 @@ import com.mymusiclist.backend.music.dto.MyMusicListDto;
 import com.mymusiclist.backend.music.dto.PlayListDto;
 import com.mymusiclist.backend.music.dto.YoutubeSearchDto;
 import com.mymusiclist.backend.music.dto.request.AddRequest;
+import com.mymusiclist.backend.music.dto.request.DeleteRequest;
 import com.mymusiclist.backend.music.dto.request.UpdateRequest;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,8 @@ public interface MusicService {
   MyMusicListDto detail(String listName);
 
   String addMusic(String listName, AddRequest addRequest);
+
+  String deleteMusic(String listName, DeleteRequest deleteRequest);
 
   List<PlayListDto> playList(String listName, Boolean repeatPlay, Boolean randomPlay);
 }
