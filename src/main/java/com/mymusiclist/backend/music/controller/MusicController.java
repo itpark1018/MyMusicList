@@ -61,13 +61,13 @@ public class MusicController {
     return ResponseEntity.ok(response);
   }
 
-  @GetMapping("/lists/myList")
+  @GetMapping("/lists/my-list")
   public ResponseEntity<List<String>> getMyList() {
     List<String> response = musicService.getMyList();
     return ResponseEntity.ok(response);
   }
 
-  @GetMapping("/lists/{listName}/detail")
+  @GetMapping("/lists/{listName}")
   public ResponseEntity<MyMusicListDto> detail(@PathVariable(name = "listName") String listName) {
     MyMusicListDto response = musicService.detail(listName);
     return ResponseEntity.ok(response);

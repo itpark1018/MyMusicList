@@ -260,10 +260,13 @@ public class MemberServiceImpl implements MemberService {
         .orElseThrow(() -> new InvalidTokenException());
 
     // 닉네임 중복체크
-    memberRepository.findByNicknameAndStatus(updateRequest.getNickname(), MemberStatus.ACTIVE)
-        .ifPresent(existing -> {
-          throw new DuplicateNicknameException();
-        });
+    // 기존 본인의 닉네임이랑 같을 때는 중복체크를 하지 않음
+    if (!updateRequest.getNickname().equals(member.getNickname())) {
+      memberRepository.findByNicknameAndStatus(updateRequest.getNickname(), MemberStatus.ACTIVE)
+          .ifPresent(existing -> {
+            throw new DuplicateNicknameException();
+          });
+    }
 
     if (!updateRequest.getNickname().equals(member.getNickname())) {
       // 사용자가 작성한 게시글, 댓글의 닉네임을 새롭게 변경하는 닉네임으로 변경
@@ -323,6 +326,9 @@ public class MemberServiceImpl implements MemberService {
 
     MemberEntity member = memberRepository.findByNickname(nickname)
         .orElseThrow(() -> new NotFoundMemberException());
+    if (!member.getStatus().equals(MemberStatus.ACTIVE)) {
+      throw new SuspendedMemberException();
+    }
 
     return MemberInfoDto.of(member);
   }
