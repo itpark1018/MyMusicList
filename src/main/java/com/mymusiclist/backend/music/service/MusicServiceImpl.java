@@ -144,31 +144,14 @@ public class MusicServiceImpl implements MusicService {
     MyMusicListEntity myMusicList = myMusicListRepository.findByMemberIdAndListName(member,
         listName).orElseThrow(() -> new NotFoundMusicListException());
 
-    MyMusicListEntity myMusicListEntity = new MyMusicListEntity();
-    if (updateRequest.getMusicName().isEmpty()) {
-      myMusicListEntity = myMusicList.toBuilder()
-          .listName(updateRequest.getListName())
-          .build();
-      myMusicListRepository.save(myMusicListEntity);
-    } else {
-      for (String musicName : updateRequest.getMusicName()) {
-        Optional<MusicEntity> byMusicName = musicRepository.findByMusicName(musicName);
-        if (byMusicName.isEmpty()) {
-          throw new NotFoundMusicException();
-        }
-        MusicEntity music = byMusicName.get();
-        musicRepository.delete(music);
+    MyMusicListEntity myMusicListEntity = myMusicList.toBuilder()
+        .listName(updateRequest.getListName())
+        .build();
+    myMusicListRepository.save(myMusicListEntity);
 
-        myMusicListEntity = myMusicList.toBuilder()
-            .listName(updateRequest.getListName())
-            .numberOfMusic(myMusicList.getNumberOfMusic() - 1)
-            .build();
-        myMusicListRepository.save(myMusicListEntity);
-      }
-    }
+    log.info("musicList update user: {}, update content - listName: {}", email,
+        updateRequest.getListName());
 
-    log.info("musicList update user: {}, update content - listName: {}, musicName: {}", email,
-        updateRequest.getListName(), updateRequest.getMusicName());
     return MyMusicListDto.of(myMusicListEntity, musicRepository);
   }
 
@@ -211,7 +194,7 @@ public class MusicServiceImpl implements MusicService {
 
   @Override
   @Transactional
-  public String addMusic(String listName, AddRequest addRequest) {
+  public String addMusic(String listName, List<AddRequest> addRequest) {
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
@@ -227,17 +210,18 @@ public class MusicServiceImpl implements MusicService {
       throw new MemberIdMismatchException();
     }
 
-    MusicEntity musicEntity = MusicEntity.builder()
-        .listId(myMusicList)
-        .musicName(addRequest.getMusicName())
-        .musicUrl(addRequest.getMusicUrl())
-        .build();
-    musicRepository.save(musicEntity);
-    ;
+    for (AddRequest item : addRequest) {
+      MusicEntity musicEntity = MusicEntity.builder()
+          .listId(myMusicList)
+          .musicName(item.getMusicName())
+          .musicUrl(item.getMusicUrl())
+          .build();
+      musicRepository.save(musicEntity);
+    }
 
     // 해당하는 뮤직 리스트의 노래 개수를 증가
     MyMusicListEntity myMusicListEntity = myMusicList.toBuilder()
-        .numberOfMusic(myMusicList.getNumberOfMusic() + 1)
+        .numberOfMusic(myMusicList.getNumberOfMusic() + addRequest.size())
         .build();
     myMusicListRepository.save(myMusicListEntity);
 

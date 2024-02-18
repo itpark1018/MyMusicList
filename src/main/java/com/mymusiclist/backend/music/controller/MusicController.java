@@ -75,7 +75,7 @@ public class MusicController {
 
   @PostMapping("lists/{listName}/music")
   public ResponseEntity<String> addMusic(@PathVariable(name = "listName") String listName,
-      @Valid @RequestBody AddRequest addRequest) {
+      @Valid @RequestBody List<AddRequest> addRequest) {
     String response = musicService.addMusic(listName, addRequest);
     return ResponseEntity.ok(response);
   }
