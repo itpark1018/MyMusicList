@@ -17,5 +17,4 @@ public class UpdateRequest {
 
   @NotBlank(message = "뮤직 리스트는 공백일 수 없습니다.")
   private String listName;
-  private List<String> musicName;
 }
