@@ -20,7 +20,7 @@ public class PostListDto {
 
   private Long postId;
   private String title;
-  private String nickName;
+  private String nickname;
   private LocalDateTime createDate;
   private Integer likeCnt;
   private Integer commentCnt;
@@ -35,7 +35,7 @@ public class PostListDto {
     return PostListDto.builder()
         .postId(postEntity.getPostId())
         .title(postEntity.getTitle())
-        .nickName(postEntity.getNickname())
+        .nickname(postEntity.getNickname())
         .createDate(postEntity.getCreateDate())
         .likeCnt(postEntity.getLikeCnt())
         .commentCnt(postEntity.getCommentCnt())
