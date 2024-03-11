@@ -175,11 +175,12 @@ public class MemberServiceImpl implements MemberService {
     }
 
     // 토큰을 통해 사용자 정보르 받아오기
-    Authentication authentication = jwtTokenProvider.getAuthentication(accessToken);
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    String email = authentication.getName();
 
     // Redis에서 해당 유저의 email로 저장된 RefreshToken이 있는지 확인 후 있을 경우 삭제
-    if (redisTemplate.opsForValue().get("RT:" + authentication.getName()) != null) {
-      redisTemplate.delete("RT:" + authentication.getName());
+    if (redisTemplate.opsForValue().get("RT:" + email) != null) {
+      redisTemplate.delete("RT:" + email);
     }
 
     // 해당 Access Token 유효시간을 가지고 와서 BlackList에 저장하기
@@ -189,7 +190,7 @@ public class MemberServiceImpl implements MemberService {
     redisTemplate.opsForValue()
         .set(accessToken, "logout", accessTokenExpiresIn, TimeUnit.MILLISECONDS);
 
-    return authentication.getName();
+    return email;
   }
 
   @Override
@@ -221,6 +222,7 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
+  @Transactional
   public String passwordAuth(String email, String code, String resetPassword) {
 
     MemberEntity member = memberRepository.findByEmail(email)
@@ -250,14 +252,18 @@ public class MemberServiceImpl implements MemberService {
 
   @Override
   @Transactional
-  public MemberDto update(UpdateRequest updateRequest) {
+  public MemberDto update(String accessToken, UpdateRequest updateRequest) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     // AccessToken에서 email을 가져와서 회원 조회
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
 
     MemberEntity member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new InvalidTokenException());
+        .orElseThrow(() -> new NotFoundMemberException());
 
     // 닉네임 중복체크
     // 기존 본인의 닉네임이랑 같을 때는 중복체크를 하지 않음
@@ -286,13 +292,17 @@ public class MemberServiceImpl implements MemberService {
 
   @Override
   @Transactional
-  public String withdrawal() {
+  public String withdrawal(String accessToken) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
 
     MemberEntity member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new InvalidTokenException());
+        .orElseThrow(() -> new NotFoundMemberException());
 
     MemberEntity memberEntity = member.toBuilder()
         .nickname("탈퇴한 회원 " + member.getNickname())
@@ -307,7 +317,11 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  public MemberDto myInfo() {
+  public MemberDto myInfo(String accessToken) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
@@ -318,7 +332,11 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  public MemberInfoDto memberInfo(String nickname) {
+  public MemberInfoDto memberInfo(String accessToken, String nickname) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();

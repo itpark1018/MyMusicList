@@ -24,11 +24,11 @@ public interface MemberService {
 
   String passwordAuth(String email, String code, String resetPassword);
 
-  MemberDto update(UpdateRequest updateRequest);
+  MemberDto update(String accessToken, UpdateRequest updateRequest);
 
-  String withdrawal();
+  String withdrawal(String accessToken);
 
-  MemberDto myInfo();
+  MemberDto myInfo(String accessToken);
 
-  MemberInfoDto memberInfo(String nickname);
+  MemberInfoDto memberInfo(String accessToken, String nickname);
 }
