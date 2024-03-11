@@ -5,9 +5,11 @@ import com.mymusiclist.backend.exception.impl.DuplicateListException;
 import com.mymusiclist.backend.exception.impl.InvalidTokenException;
 import com.mymusiclist.backend.exception.impl.ListEmptyException;
 import com.mymusiclist.backend.exception.impl.MemberIdMismatchException;
+import com.mymusiclist.backend.exception.impl.NotFoundMemberException;
 import com.mymusiclist.backend.exception.impl.NotFoundMusicException;
 import com.mymusiclist.backend.exception.impl.NotFoundMusicListException;
 import com.mymusiclist.backend.member.domain.MemberEntity;
+import com.mymusiclist.backend.member.jwt.JwtTokenProvider;
 import com.mymusiclist.backend.member.repository.MemberRepository;
 import com.mymusiclist.backend.music.domain.MusicEntity;
 import com.mymusiclist.backend.music.domain.MyMusicListEntity;
@@ -42,9 +44,14 @@ public class MusicServiceImpl implements MusicService {
   private final MyMusicListRepository myMusicListRepository;
   private final MusicRepository musicRepository;
   private final YoutubeClient youtubeClient;
+  private final JwtTokenProvider jwtTokenProvider;
 
   @Override
-  public List<YoutubeSearchDto> search(String keyword) {
+  public List<YoutubeSearchDto> search(String accessToken, String keyword) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     try {
       List<SearchResult> searchResults = youtubeClient.youtubeSearch(keyword);
@@ -72,13 +79,17 @@ public class MusicServiceImpl implements MusicService {
 
   @Override
   @Transactional
-  public String createList(String listName) {
+  public String createList(String accessToken, String listName) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
 
     MemberEntity member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new InvalidTokenException());
+        .orElseThrow(() -> new NotFoundMemberException());
 
     myMusicListRepository.findByMemberIdAndListName(member, listName)
         .ifPresentOrElse(value -> {
@@ -101,13 +112,17 @@ public class MusicServiceImpl implements MusicService {
 
   @Override
   @Transactional
-  public String deleteList(String listName) {
+  public String deleteList(String accessToken, String listName) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
 
     MemberEntity member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new InvalidTokenException());
+        .orElseThrow(() -> new NotFoundMemberException());
 
     MyMusicListEntity myMusicList = myMusicListRepository.findByMemberIdAndListName(member,
         listName).orElseThrow(() -> new NotFoundMusicListException());
@@ -133,13 +148,17 @@ public class MusicServiceImpl implements MusicService {
 
   @Override
   @Transactional
-  public MyMusicListDto updateList(String listName, UpdateRequest updateRequest) {
+  public MyMusicListDto updateList(String accessToken, String listName, UpdateRequest updateRequest) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
 
     MemberEntity member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new InvalidTokenException());
+        .orElseThrow(() -> new NotFoundMemberException());
 
     MyMusicListEntity myMusicList = myMusicListRepository.findByMemberIdAndListName(member,
         listName).orElseThrow(() -> new NotFoundMusicListException());
@@ -156,13 +175,17 @@ public class MusicServiceImpl implements MusicService {
   }
 
   @Override
-  public List<String> getMyList() {
+  public List<String> getMyList(String accessToken) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
 
     MemberEntity member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new InvalidTokenException());
+        .orElseThrow(() -> new NotFoundMemberException());
 
     List<MyMusicListEntity> byMemberId = myMusicListRepository.findByMemberId(member);
     if (byMemberId.isEmpty()) {
@@ -178,13 +201,17 @@ public class MusicServiceImpl implements MusicService {
   }
 
   @Override
-  public MyMusicListDto detail(String listName) {
+  public MyMusicListDto detail(String accessToken, String listName) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
 
     MemberEntity member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new InvalidTokenException());
+        .orElseThrow(() -> new NotFoundMemberException());
 
     MyMusicListEntity myMusicList = myMusicListRepository.findByMemberIdAndListName(member,
         listName).orElseThrow(() -> new NotFoundMusicListException());
@@ -194,13 +221,17 @@ public class MusicServiceImpl implements MusicService {
 
   @Override
   @Transactional
-  public String addMusic(String listName, List<AddRequest> addRequest) {
+  public String addMusic(String accessToken, String listName, List<AddRequest> addRequest) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
 
     MemberEntity member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new InvalidTokenException());
+        .orElseThrow(() -> new NotFoundMemberException());
 
     MyMusicListEntity myMusicList = myMusicListRepository.findByMemberIdAndListName(member,
         listName).orElseThrow(() -> new NotFoundMusicListException());
@@ -229,13 +260,17 @@ public class MusicServiceImpl implements MusicService {
   }
 
   @Override
-  public String deleteMusic(String listName, DeleteRequest deleteRequest) {
+  public String deleteMusic(String accessToken, String listName, DeleteRequest deleteRequest) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
 
     MemberEntity member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new InvalidTokenException());
+        .orElseThrow(() -> new NotFoundMemberException());
 
     MyMusicListEntity myMusicList = myMusicListRepository.findByMemberIdAndListName(member,
         listName).orElseThrow(() -> new NotFoundMusicListException());
@@ -262,13 +297,17 @@ public class MusicServiceImpl implements MusicService {
 
   @Override
   @Transactional
-  public List<PlayListDto> playList(String listName, Boolean repeatPlay, Boolean randomPlay) {
+  public List<PlayListDto> playList(String accessToken, String listName, Boolean repeatPlay, Boolean randomPlay) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
 
     MemberEntity member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new InvalidTokenException());
+        .orElseThrow(() -> new NotFoundMemberException());
 
     MyMusicListEntity myMusicList = myMusicListRepository.findByMemberIdAndListName(member,
         listName).orElseThrow(() -> new NotFoundMusicListException());
