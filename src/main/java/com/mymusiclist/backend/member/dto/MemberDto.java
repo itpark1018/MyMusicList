@@ -1,6 +1,9 @@
 package com.mymusiclist.backend.member.dto;
 
 import com.mymusiclist.backend.member.domain.MemberEntity;
+import com.mymusiclist.backend.member.dto.request.SignUpRequest;
+import com.mymusiclist.backend.member.dto.parameter.SignUpParameter;
+import com.mymusiclist.backend.type.MemberStatus;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
