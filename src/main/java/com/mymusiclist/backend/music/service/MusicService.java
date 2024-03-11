@@ -12,21 +12,21 @@ import org.springframework.stereotype.Service;
 @Service
 public interface MusicService {
 
-  List<YoutubeSearchDto> search(String keyword);
+  List<YoutubeSearchDto> search(String accessToken, String keyword);
 
-  String createList(String listName);
+  String createList(String accessToken, String listName);
 
-  String deleteList(String listName);
+  String deleteList(String accessToken, String listName);
 
-  MyMusicListDto updateList(String listName, UpdateRequest updateRequest);
+  MyMusicListDto updateList(String accessToken, String listName, UpdateRequest updateRequest);
 
-  List<String> getMyList();
+  List<String> getMyList(String accessToken);
 
-  MyMusicListDto detail(String listName);
+  MyMusicListDto detail(String accessToken, String listName);
 
-  String addMusic(String listName, List<AddRequest> addRequest);
+  String addMusic(String accessToken, String listName, List<AddRequest> addRequest);
 
-  String deleteMusic(String listName, DeleteRequest deleteRequest);
+  String deleteMusic(String accessToken, String listName, DeleteRequest deleteRequest);
 
-  List<PlayListDto> playList(String listName, Boolean repeatPlay, Boolean randomPlay);
+  List<PlayListDto> playList(String accessToken, String listName, Boolean repeatPlay, Boolean randomPlay);
 }

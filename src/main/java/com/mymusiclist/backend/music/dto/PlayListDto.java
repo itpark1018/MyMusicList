@@ -1,7 +1,6 @@
 package com.mymusiclist.backend.music.dto;
 
 import com.mymusiclist.backend.music.domain.MusicEntity;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
