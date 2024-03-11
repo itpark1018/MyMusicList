@@ -25,4 +25,5 @@ public class PostDetailDto {
   private String listName;
   private List<PlayListDto> musicList;
   private List<CommentDto> comment;
+  private Boolean likeYn;
 }
