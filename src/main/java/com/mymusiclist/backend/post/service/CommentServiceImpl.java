@@ -7,6 +7,7 @@ import com.mymusiclist.backend.exception.impl.NotFoundCommentException;
 import com.mymusiclist.backend.exception.impl.NotFoundMemberException;
 import com.mymusiclist.backend.exception.impl.NotFoundPostException;
 import com.mymusiclist.backend.member.domain.MemberEntity;
+import com.mymusiclist.backend.member.jwt.JwtTokenProvider;
 import com.mymusiclist.backend.member.repository.MemberRepository;
 import com.mymusiclist.backend.post.domain.CommentEntity;
 import com.mymusiclist.backend.post.domain.CommentLikeEntity;
@@ -20,10 +21,13 @@ import com.mymusiclist.backend.post.repository.PostRepository;
 import com.mymusiclist.backend.type.CommentStatus;
 import com.mymusiclist.backend.type.PostStatus;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import javax.xml.stream.events.Comment;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -39,6 +43,7 @@ public class CommentServiceImpl implements CommentService {
   private final MemberRepository memberRepository;
   private final PostRepository postRepository;
   private final CommentLikeRepository commentLikeRepository;
+  private final JwtTokenProvider jwtTokenProvider;
 
   @Override
   public List<CommentDto> getList(PostEntity postEntity) {
@@ -46,12 +51,40 @@ public class CommentServiceImpl implements CommentService {
     List<CommentEntity> commentList = commentRepository.findByPostIdAndStatusOrderByCreateDateDesc(
         postEntity, CommentStatus.ACTIVE);
 
-    return CommentDto.listOf(commentList);
+    List<Boolean> commentYnList = new ArrayList<>();
+
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication != null && !(authentication instanceof AnonymousAuthenticationToken)) {
+      String email = authentication.getName();
+      MemberEntity member = memberRepository.findByEmail(email)
+          .orElseThrow(() -> new NotFoundMemberException());
+
+      for (CommentEntity comment : commentList) {
+        Optional<CommentLikeEntity> byCommentIdAndMemberId = commentLikeRepository.findByCommentIdAndMemberId(
+            comment, member);
+        if (byCommentIdAndMemberId.isPresent()) {
+          commentYnList.add(true);
+        } else {
+          commentYnList.add(false);
+        }
+      }
+
+      return CommentDto.listOf(commentList, commentYnList);
+    }
+
+    for (int i = 0; i < commentList.size(); i++) {
+      commentYnList.add(false);
+    }
+    return CommentDto.listOf(commentList, commentYnList);
   }
 
   @Override
   @Transactional
-  public String create(Long postId, CommentRequest commentRequest) {
+  public String create(String accessToken, Long postId, CommentRequest commentRequest) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
@@ -88,7 +121,11 @@ public class CommentServiceImpl implements CommentService {
 
   @Override
   @Transactional
-  public String delete(Long postId, Long commentId) {
+  public String delete(String accessToken, Long postId, Long commentId) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -155,7 +192,11 @@ public class CommentServiceImpl implements CommentService {
 
   @Override
   @Transactional
-  public String update(Long postId, Long commentId, CommentRequest commentRequest) {
+  public String update(String accessToken, Long postId, Long commentId, CommentRequest commentRequest) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -211,7 +252,11 @@ public class CommentServiceImpl implements CommentService {
 
   @Override
   @Transactional
-  public void like(Long postId, Long commentId) {
+  public void like(String accessToken, Long postId, Long commentId) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
@@ -263,7 +308,11 @@ public class CommentServiceImpl implements CommentService {
   }
 
   @Override
-  public List<MyCommentDto> getMyComment() {
+  public List<MyCommentDto> getMyComment(String accessToken) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();

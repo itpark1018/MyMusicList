@@ -7,29 +7,30 @@ import com.mymusiclist.backend.admin.dto.request.CommentUpdateRequest;
 import com.mymusiclist.backend.admin.dto.request.MemberUpdateRequest;
 import com.mymusiclist.backend.admin.dto.request.PostUpdateRequest;
 import com.mymusiclist.backend.type.MemberStatus;
+import com.mymusiclist.backend.type.SearchOption;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
 public interface AdminService {
 
-  String setMemberStatus(Long memberId, MemberStatus memberStatus);
+  String setMemberStatus(String accessToken, Long memberId, MemberStatus memberStatus);
 
-  MemberDetailDto getMemberInfo(Long memberId);
+  MemberDetailDto getMemberInfo(String accessToken, Long memberId);
 
-  String memberUpdate(Long memberId, MemberUpdateRequest memberUpdateRequest);
+  String memberUpdate(String accessToken, Long memberId, MemberUpdateRequest memberUpdateRequest);
 
-  List<MemberDetailDto> searchMember(String keyword, String searchOption);
+  List<MemberDetailDto> searchMember(String accessToken, String keyword, SearchOption searchOption);
 
-  String postDelete(Long postId);
+  String postDelete(String accessToken, Long postId);
 
-  String postUpdate(PostUpdateRequest postUpdateRequest);
+  String postUpdate(String accessToken, PostUpdateRequest postUpdateRequest);
 
-  String commentDelete(Long commentId);
+  String commentDelete(String accessToken, Long commentId);
 
-  String commentUpdate(CommentUpdateRequest commentUpdateRequest);
+  String commentUpdate(String accessToken, CommentUpdateRequest commentUpdateRequest);
 
-  List<AdminPostListDto> searchPost(String keyword, String searchOption);
+  List<AdminPostListDto> searchPost(String accessToken, String keyword, SearchOption searchOption);
 
-  List<AdminCommentListDto> searchComment(String keyword, String searchOption);
+  List<AdminCommentListDto> searchComment(String accessToken, String keyword, SearchOption searchOption);
 }

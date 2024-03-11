@@ -8,8 +8,10 @@ import com.mymusiclist.backend.admin.dto.request.MemberUpdateRequest;
 import com.mymusiclist.backend.admin.dto.request.PostUpdateRequest;
 import com.mymusiclist.backend.exception.impl.DuplicateNicknameException;
 import com.mymusiclist.backend.exception.impl.InvalidSearchOptionException;
+import com.mymusiclist.backend.exception.impl.InvalidTokenException;
 import com.mymusiclist.backend.exception.impl.NotFoundMemberException;
 import com.mymusiclist.backend.member.domain.MemberEntity;
+import com.mymusiclist.backend.member.jwt.JwtTokenProvider;
 import com.mymusiclist.backend.member.repository.MemberRepository;
 import com.mymusiclist.backend.post.domain.CommentEntity;
 import com.mymusiclist.backend.post.domain.PostEntity;
@@ -42,10 +44,15 @@ public class AdminServiceImpl implements AdminService {
   private final CommentRepository commentRepository;
   private final PostService postService;
   private final CommentService commentService;
+  private final JwtTokenProvider jwtTokenProvider;
 
   @Override
   @Transactional
-  public String setMemberStatus(Long memberId, MemberStatus memberStatus) {
+  public String setMemberStatus(String accessToken, Long memberId, MemberStatus memberStatus) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     MemberEntity member = memberRepository.findByMemberId(memberId)
         .orElseThrow(() -> new NotFoundMemberException());
@@ -81,7 +88,11 @@ public class AdminServiceImpl implements AdminService {
   }
 
   @Override
-  public MemberDetailDto getMemberInfo(Long memberId) {
+  public MemberDetailDto getMemberInfo(String accessToken, Long memberId) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     MemberEntity member = memberRepository.findByMemberId(memberId)
         .orElseThrow(() -> new NotFoundMemberException());
@@ -91,7 +102,11 @@ public class AdminServiceImpl implements AdminService {
 
   @Override
   @Transactional
-  public String memberUpdate(Long memberId, MemberUpdateRequest memberUpdateRequest) {
+  public String memberUpdate(String accessToken, Long memberId, MemberUpdateRequest memberUpdateRequest) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     MemberEntity member = memberRepository.findByMemberId(memberId)
         .orElseThrow(() -> new NotFoundMemberException());
@@ -124,16 +139,20 @@ public class AdminServiceImpl implements AdminService {
   }
 
   @Override
-  public List<MemberDetailDto> searchMember(String keyword, String searchOption) {
+  public List<MemberDetailDto> searchMember(String accessToken, String keyword, SearchOption searchOption) {
 
-    if (searchOption.equals(SearchOption.NAME.getValue())) {
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
+
+    if (searchOption.equals(SearchOption.NAME)) {
       List<MemberEntity> byName = memberRepository.findByName(keyword);
       if (byName.isEmpty()) {
         throw new NotFoundMemberException();
       }
 
       return MemberDetailDto.listOf(byName);
-    } else if (searchOption.equals(SearchOption.NICKNAME.getValue())) {
+    } else if (searchOption.equals(SearchOption.NICKNAME)) {
       MemberEntity member = memberRepository.findByNickname(keyword)
           .orElseThrow(() -> new NotFoundMemberException());
 
@@ -146,47 +165,51 @@ public class AdminServiceImpl implements AdminService {
   }
 
   @Override
-  public String postDelete(Long postId) {
+  public String postDelete(String accessToken, Long postId) {
 
-    return postService.delete(postId);
+    return postService.delete(accessToken, postId);
   }
 
   @Override
-  public String postUpdate(PostUpdateRequest postUpdateRequest) {
+  public String postUpdate(String accessToken, PostUpdateRequest postUpdateRequest) {
 
-    return postService.update(postUpdateRequest.getPostId(),
+    return postService.update(accessToken, postUpdateRequest.getPostId(),
         PostUpdateRequest.postRequest(postUpdateRequest));
   }
 
   @Override
-  public String commentDelete(Long commentId) {
+  public String commentDelete(String accessToken, Long commentId) {
 
-    return commentService.delete(null, commentId);
+    return commentService.delete(accessToken, null, commentId);
   }
 
   @Override
-  public String commentUpdate(CommentUpdateRequest commentUpdateRequest) {
+  public String commentUpdate(String accessToken, CommentUpdateRequest commentUpdateRequest) {
 
-    return commentService.update(null, commentUpdateRequest.getCommentId(),
+    return commentService.update(accessToken, null, commentUpdateRequest.getCommentId(),
         CommentUpdateRequest.commentRequest(commentUpdateRequest));
   }
 
   @Override
-  public List<AdminPostListDto> searchPost(String keyword, String searchOption) {
+  public List<AdminPostListDto> searchPost(String accessToken, String keyword, SearchOption searchOption) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     List<PostEntity> posts = new ArrayList<>();
 
     // 검색옵션에 따라 검색되는 게시물이 달라지게 설정
-    if (searchOption.equals(SearchOption.TITLE.getValue())) {
+    if (searchOption.equals(SearchOption.TITLE)) {
       // 제목에서 키워드를 포함하는 게시물 검색
       posts = postRepository.findByTitleContaining(keyword);
-    } else if (searchOption.equals(SearchOption.CONTENT.getValue())) {
+    } else if (searchOption.equals(SearchOption.CONTENT)) {
       // 내용에서 키워드를 포함하는 게시물 검색
       posts = postRepository.findByContentContaining(keyword);
-    } else if (searchOption.equals(SearchOption.TITLE_AND_CONTENT.getValue())) {
+    } else if (searchOption.equals(SearchOption.TITLE_AND_CONTENT)) {
       // 제목이나 내용에서 키워드를 포함하는 게시물 검색
       posts = postRepository.findByTitleContainingOrContentContaining(keyword, keyword);
-    } else if (searchOption.equals(SearchOption.NICKNAME.getValue())) {
+    } else if (searchOption.equals(SearchOption.NICKNAME)) {
       // 닉네임으로 게시물 검색, 닉네임 검색은 닉네임이 정확해야 검색 가능.
       posts = postRepository.findByNickname(keyword);
     }
@@ -195,15 +218,19 @@ public class AdminServiceImpl implements AdminService {
   }
 
   @Override
-  public List<AdminCommentListDto> searchComment(String keyword, String searchOption) {
+  public List<AdminCommentListDto> searchComment(String accessToken, String keyword, SearchOption searchOption) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     List<CommentEntity> comments = new ArrayList<>();
 
     // 검색옵션에 따라 검색되는 게시물이 달라지게 설정
-    if (searchOption.equals(SearchOption.COMMENT.getValue())) {
+    if (searchOption.equals(SearchOption.COMMENT)) {
       // 댓글 내용에서 키워드를 포함하는 댓글 검색
       comments = commentRepository.findByCommentContaining(keyword);
-    } else if (searchOption.equals(SearchOption.NICKNAME.getValue())) {
+    } else if (searchOption.equals(SearchOption.NICKNAME)) {
       // 닉네임으로 게시물 검색, 닉네임 검색은 닉네임이 정확해야 검색 가능.
       comments = commentRepository.findByNickname(keyword);
     }

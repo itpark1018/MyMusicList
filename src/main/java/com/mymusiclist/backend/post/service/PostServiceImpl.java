@@ -8,6 +8,7 @@ import com.mymusiclist.backend.exception.impl.NotFoundMemberException;
 import com.mymusiclist.backend.exception.impl.NotFoundMusicListException;
 import com.mymusiclist.backend.exception.impl.NotFoundPostException;
 import com.mymusiclist.backend.member.domain.MemberEntity;
+import com.mymusiclist.backend.member.jwt.JwtTokenProvider;
 import com.mymusiclist.backend.member.repository.MemberRepository;
 import com.mymusiclist.backend.music.domain.MusicEntity;
 import com.mymusiclist.backend.music.domain.MyMusicListEntity;
@@ -36,6 +37,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -55,16 +57,21 @@ public class PostServiceImpl implements PostService {
   private final CommentService commentService;
   private final PostLikeRepository postLikeRepository;
   private final CommentLikeRepository commentLikeRepository;
+  private final JwtTokenProvider jwtTokenProvider;
 
   @Override
   @Transactional
-  public String create(PostRequest postRequest) {
+  public String create(String accessToken, PostRequest postRequest) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
 
     MemberEntity member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new InvalidTokenException());
+        .orElseThrow(() -> new NotFoundMemberException());
 
     MyMusicListEntity myMusicList = null;
     if (postRequest.getListName() != null && !postRequest.getListName().isEmpty()) {
@@ -94,7 +101,11 @@ public class PostServiceImpl implements PostService {
 
   @Override
   @Transactional
-  public String update(Long postId, PostRequest postRequest) {
+  public String update(String accessToken, Long postId, PostRequest postRequest) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -173,7 +184,11 @@ public class PostServiceImpl implements PostService {
 
   @Override
   @Transactional
-  public String delete(Long postId) {
+  public String delete(String accessToken, Long postId) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -267,6 +282,21 @@ public class PostServiceImpl implements PostService {
     List<MusicEntity> musicList = musicRepository.findByListId(post.getListId());
     List<CommentDto> commentList = commentService.getList(post);
 
+    Boolean likeYn = null;
+
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication != null && !(authentication instanceof AnonymousAuthenticationToken)) {
+      String email = authentication.getName();
+      MemberEntity member = memberRepository.findByEmail(email)
+          .orElseThrow(() -> new NotFoundMemberException());
+
+      Optional<PostLikeEntity> byPostIdAndMemberId = postLikeRepository.findByPostIdAndMemberId(
+          post, member);
+      if (byPostIdAndMemberId.isPresent()) {
+        likeYn = true;
+      }
+    }
+
     PostDetailDto postDetailDto = PostDetailDto.builder()
         .postId(post.getPostId())
         .title(post.getTitle())
@@ -277,13 +307,18 @@ public class PostServiceImpl implements PostService {
         .listName(post.getListId().getListName())
         .musicList(PlayListDto.listOf(musicList))
         .comment(commentList)
+        .likeYn(likeYn)
         .build();
 
     return postDetailDto;
   }
 
   @Override
-  public List<PostListDto> getMyPost() {
+  public List<PostListDto> getMyPost(String accessToken) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
@@ -299,7 +334,11 @@ public class PostServiceImpl implements PostService {
 
   @Override
   @Transactional
-  public void like(Long postId) {
+  public void like(String accessToken, Long postId) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String email = authentication.getName();
@@ -345,24 +384,28 @@ public class PostServiceImpl implements PostService {
   }
 
   @Override
-  public List<PostListDto> search(String keyword, String searchOption) {
+  public List<PostListDto> search(String accessToken, String keyword, SearchOption searchOption) {
+
+    if (!jwtTokenProvider.validateToken(accessToken)) {
+      throw new InvalidTokenException();
+    }
 
     List<PostEntity> posts = new ArrayList<>();
 
     // 검색옵션에 따라 검색되는 게시물이 달라지게 설정
-    if (searchOption.equals(SearchOption.TITLE.getValue())) {
+    if (searchOption.equals(SearchOption.TITLE)) {
       // 제목에서 키워드를 포함하는 게시물 검색
       posts = postRepository.findByTitleContainingAndStatus(keyword,
           PostStatus.ACTIVE);
-    } else if (searchOption.equals(SearchOption.CONTENT.getValue())) {
+    } else if (searchOption.equals(SearchOption.CONTENT)) {
       // 내용에서 키워드를 포함하는 게시물 검색
       posts = postRepository.findByContentContainingAndStatus(keyword,
           PostStatus.ACTIVE);
-    } else if (searchOption.equals(SearchOption.TITLE_AND_CONTENT.getValue())) {
+    } else if (searchOption.equals(SearchOption.TITLE_AND_CONTENT)) {
       // 제목이나 내용에서 키워드를 포함하는 게시물 검색
       posts = postRepository.findByTitleContainingOrContentContainingAndStatus(keyword, keyword,
           PostStatus.ACTIVE);
-    } else if (searchOption.equals(SearchOption.NICKNAME.getValue())) {
+    } else if (searchOption.equals(SearchOption.NICKNAME)) {
       // 닉네임으로 게시물 검색, 닉네임 검색은 닉네임이 정확해야 검색 가능.
       posts = postRepository.findByNicknameAndStatus(keyword, PostStatus.ACTIVE);
     } else {

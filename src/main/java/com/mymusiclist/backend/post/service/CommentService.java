@@ -13,13 +13,13 @@ public interface CommentService {
 
   List<CommentDto> getList(PostEntity postEntity);
 
-  String create(Long postId, CommentRequest commentRequest);
+  String create(String accessToken, Long postId, CommentRequest commentRequest);
 
-  String delete(Long postId, Long commentId);
+  String delete(String accessToken, Long postId, Long commentId);
 
-  String update(Long postId, Long commentId, CommentRequest commentRequest);
+  String update(String accessToken, Long postId, Long commentId, CommentRequest commentRequest);
 
-  void like(Long postId, Long commentId);
+  void like(String accessToken, Long postId, Long commentId);
 
-  List<MyCommentDto> getMyComment();
+  List<MyCommentDto> getMyComment(String accessToken);
 }

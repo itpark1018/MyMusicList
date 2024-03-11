@@ -7,6 +7,8 @@ import com.mymusiclist.backend.post.dto.request.CommentRequest;
 import com.mymusiclist.backend.post.dto.request.PostRequest;
 import com.mymusiclist.backend.post.service.CommentService;
 import com.mymusiclist.backend.post.service.PostService;
+import com.mymusiclist.backend.type.SearchOption;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
@@ -33,21 +35,27 @@ public class PostController {
   private final CommentService commentService;
 
   @PostMapping
-  public ResponseEntity<String> create(@Valid @RequestBody PostRequest postRequest) {
-    String response = postService.create(postRequest);
+  public ResponseEntity<String> create(HttpServletRequest request,
+      @Valid @RequestBody PostRequest postRequest) {
+    String accessToken = getToken(request);
+    String response = postService.create(accessToken, postRequest);
     return ResponseEntity.ok(response);
   }
 
   @PutMapping("/{postId}")
-  public ResponseEntity<String> update(@Valid @PathVariable(name = "postId") Long postId,
+  public ResponseEntity<String> update(HttpServletRequest request,
+      @Valid @PathVariable(name = "postId") Long postId,
       @RequestBody PostRequest postRequest) {
-    String response = postService.update(postId, postRequest);
+    String accessToken = getToken(request);
+    String response = postService.update(accessToken, postId, postRequest);
     return ResponseEntity.ok(response);
   }
 
   @DeleteMapping("/{postId}")
-  public ResponseEntity<String> delete(@PathVariable(name = "postId") Long postId) {
-    String response = postService.delete(postId);
+  public ResponseEntity<String> delete(HttpServletRequest request,
+      @PathVariable(name = "postId") Long postId) {
+    String accessToken = getToken(request);
+    String response = postService.delete(accessToken, postId);
     return ResponseEntity.ok(response);
   }
 
@@ -65,56 +73,74 @@ public class PostController {
   }
 
   @GetMapping("/my-post")
-  public ResponseEntity<List<PostListDto>> getMyPost() {
-    List<PostListDto> response = postService.getMyPost();
+  public ResponseEntity<List<PostListDto>> getMyPost(HttpServletRequest request) {
+    String accessToken = getToken(request);
+    List<PostListDto> response = postService.getMyPost(accessToken);
     return ResponseEntity.ok(response);
   }
 
   @PostMapping("/lists/{postId}/like")
-  public void postLike(@PathVariable(name = "postId") Long postId) {
-    postService.like(postId);
+  public void postLike(HttpServletRequest request, @PathVariable(name = "postId") Long postId) {
+    String accessToken = getToken(request);
+    postService.like(accessToken, postId);
   }
 
   @GetMapping("/search")
-  public ResponseEntity<List<PostListDto>> search(
+  public ResponseEntity<List<PostListDto>> search(HttpServletRequest request,
       @Valid @NotNull(message = "검색어가 없으면 안됩니다.") @RequestParam(name = "keyword") String keyword,
-      @RequestParam(name = "searchOption") String searchOption) {
-    List<PostListDto> response = postService.search(keyword, searchOption);
+      @RequestParam(name = "searchOption") SearchOption searchOption) {
+    String accessToken = getToken(request);
+    List<PostListDto> response = postService.search(accessToken, keyword, searchOption);
     log.info("post searchKeyword: {}, post searchOption: {}", keyword, searchOption);
     return ResponseEntity.ok(response);
   }
 
   @PostMapping("/lists/{postId}/comments")
-  public ResponseEntity<String> commentCreate(@PathVariable(name = "postId") Long postId,
+  public ResponseEntity<String> commentCreate(HttpServletRequest request,
+      @PathVariable(name = "postId") Long postId,
       @Valid @RequestBody CommentRequest commentRequest) {
-    String response = commentService.create(postId, commentRequest);
+    String accessToken = getToken(request);
+    String response = commentService.create(accessToken, postId, commentRequest);
     return ResponseEntity.ok(response);
   }
 
   @DeleteMapping("/lists/{postId}/comments/{commentId}")
-  public ResponseEntity<String> commentDelete(@PathVariable(name = "postId") Long postId,
+  public ResponseEntity<String> commentDelete(HttpServletRequest request,
+      @PathVariable(name = "postId") Long postId,
       @PathVariable(name = "commentId") Long commentId) {
-    String response = commentService.delete(postId, commentId);
+    String accessToken = getToken(request);
+    String response = commentService.delete(accessToken, postId, commentId);
     return ResponseEntity.ok(response);
   }
 
   @PutMapping("/lists/{postId}/comments/{commentId}")
-  public ResponseEntity<String> commentUpdate(@PathVariable(name = "postId") Long postId,
-      @PathVariable(name = "commentId") Long commentId,
+  public ResponseEntity<String> commentUpdate(HttpServletRequest request,
+      @PathVariable(name = "postId") Long postId, @PathVariable(name = "commentId") Long commentId,
       @Valid @RequestBody CommentRequest commentRequest) {
-    String response = commentService.update(postId, commentId, commentRequest);
+    String accessToken = getToken(request);
+    String response = commentService.update(accessToken, postId, commentId, commentRequest);
     return ResponseEntity.ok(response);
   }
 
   @PostMapping("/lists/{postId}/comments/{commentId}/like")
-  public void commentLike(@PathVariable(name = "postId") Long postId,
+  public void commentLike(HttpServletRequest request, @PathVariable(name = "postId") Long postId,
       @PathVariable(name = "commentId") Long commentId) {
-    commentService.like(postId, commentId);
+    String accessToken = getToken(request);
+    commentService.like(accessToken, postId, commentId);
   }
 
   @GetMapping("/my-comment")
-  public ResponseEntity<List<MyCommentDto>> getMyComment() {
-    List<MyCommentDto> response = commentService.getMyComment();
+  public ResponseEntity<List<MyCommentDto>> getMyComment(HttpServletRequest request) {
+    String accessToken = getToken(request);
+    List<MyCommentDto> response = commentService.getMyComment(accessToken);
     return ResponseEntity.ok(response);
+  }
+
+  private static String getToken(HttpServletRequest request) {
+    String token = request.getHeader("Authorization");
+    if (token != null && token.startsWith("Bearer ")) {
+      token = token.substring(7); // "Bearer " 이후의 토큰 값만 추출
+    }
+    return token;
   }
 }
