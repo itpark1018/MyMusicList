@@ -83,11 +83,13 @@ public class JwtTokenProvider {
   }
 
   public String resolveToken(HttpServletRequest request) {
-    String bearerToken = request.getHeader("Authorization");
-    if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-      return bearerToken.substring(7); // "Bearer " 다음의 토큰 부분 반환
+    final String BEARER = "Bearer ";
+
+    String token = request.getHeader("Authorization");
+    if (token != null && token.startsWith(BEARER)) {
+      token = token.substring(BEARER.length()); // "Bearer " 이후의 토큰 값만 추출
     }
-    return null;
+    return token;
   }
 
   public boolean validateToken(String token) {

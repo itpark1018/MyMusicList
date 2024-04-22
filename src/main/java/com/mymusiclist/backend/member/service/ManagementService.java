@@ -2,7 +2,7 @@ package com.mymusiclist.backend.member.service;
 
 import com.mymusiclist.backend.member.dto.MemberDto;
 import com.mymusiclist.backend.member.dto.MemberInfoDto;
-import com.mymusiclist.backend.member.dto.TokenDto;
+import com.mymusiclist.backend.member.dto.TokenCreateDto;
 import com.mymusiclist.backend.member.dto.request.LoginRequest;
 import com.mymusiclist.backend.member.dto.request.ResetRequest;
 import com.mymusiclist.backend.member.dto.request.SignUpRequest;
@@ -10,13 +10,13 @@ import com.mymusiclist.backend.member.dto.request.UpdateRequest;
 import org.springframework.stereotype.Service;
 
 @Service
-public interface MemberService {
+public interface ManagementService {
 
   String signUp(SignUpRequest signUpRequest);
 
   String auth(String email, String code);
 
-  TokenDto login(LoginRequest loginRequest);
+  TokenCreateDto login(LoginRequest loginRequest);
 
   String logout(String accessToken);
 

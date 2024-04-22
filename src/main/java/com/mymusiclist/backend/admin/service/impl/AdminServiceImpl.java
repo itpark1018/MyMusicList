@@ -1,4 +1,4 @@
-package com.mymusiclist.backend.admin.service;
+package com.mymusiclist.backend.admin.service.impl;
 
 import com.mymusiclist.backend.admin.dto.AdminCommentListDto;
 import com.mymusiclist.backend.admin.dto.AdminPostListDto;
@@ -6,6 +6,7 @@ import com.mymusiclist.backend.admin.dto.MemberDetailDto;
 import com.mymusiclist.backend.admin.dto.request.CommentUpdateRequest;
 import com.mymusiclist.backend.admin.dto.request.MemberUpdateRequest;
 import com.mymusiclist.backend.admin.dto.request.PostUpdateRequest;
+import com.mymusiclist.backend.admin.service.AdminService;
 import com.mymusiclist.backend.exception.impl.DuplicateNicknameException;
 import com.mymusiclist.backend.exception.impl.InvalidSearchOptionException;
 import com.mymusiclist.backend.exception.impl.InvalidTokenException;

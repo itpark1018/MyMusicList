@@ -1,15 +1,12 @@
-package com.mymusiclist.backend.member.service;
+package com.mymusiclist.backend.member.service.impl;
 
-import com.mymusiclist.backend.exception.impl.InvalidPasswordException;
 import com.mymusiclist.backend.exception.impl.InvalidTokenException;
-import com.mymusiclist.backend.exception.impl.NotFoundMemberException;
 import com.mymusiclist.backend.member.domain.MemberEntity;
 import com.mymusiclist.backend.member.dto.TokenDto;
 import com.mymusiclist.backend.member.jwt.JwtTokenProvider;
 import com.mymusiclist.backend.member.repository.MemberRepository;
+import com.mymusiclist.backend.member.service.TokenService;
 import io.jsonwebtoken.Claims;
-import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +16,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TokenServiceImpl implements TokenService{
+public class TokenServiceImpl implements TokenService {
 
   private final JwtTokenProvider jwtTokenProvider;
   private final RedisTemplate redisTemplate;

@@ -1,5 +1,6 @@
 package com.mymusiclist.backend.post.controller;
 
+import com.mymusiclist.backend.member.jwt.JwtTokenProvider;
 import com.mymusiclist.backend.post.dto.MyCommentDto;
 import com.mymusiclist.backend.post.dto.PostDetailDto;
 import com.mymusiclist.backend.post.dto.PostListDto;
@@ -33,11 +34,12 @@ public class PostController {
 
   private final PostService postService;
   private final CommentService commentService;
+  private final JwtTokenProvider jwtTokenProvider;
 
   @PostMapping
   public ResponseEntity<String> create(HttpServletRequest request,
       @Valid @RequestBody PostRequest postRequest) {
-    String accessToken = getToken(request);
+    String accessToken = jwtTokenProvider.resolveToken(request);
     String response = postService.create(accessToken, postRequest);
     return ResponseEntity.ok(response);
   }
@@ -46,7 +48,7 @@ public class PostController {
   public ResponseEntity<String> update(HttpServletRequest request,
       @Valid @PathVariable(name = "postId") Long postId,
       @RequestBody PostRequest postRequest) {
-    String accessToken = getToken(request);
+    String accessToken = jwtTokenProvider.resolveToken(request);
     String response = postService.update(accessToken, postId, postRequest);
     return ResponseEntity.ok(response);
   }
@@ -54,7 +56,7 @@ public class PostController {
   @DeleteMapping("/{postId}")
   public ResponseEntity<String> delete(HttpServletRequest request,
       @PathVariable(name = "postId") Long postId) {
-    String accessToken = getToken(request);
+    String accessToken = jwtTokenProvider.resolveToken(request);
     String response = postService.delete(accessToken, postId);
     return ResponseEntity.ok(response);
   }
@@ -74,14 +76,14 @@ public class PostController {
 
   @GetMapping("/my-post")
   public ResponseEntity<List<PostListDto>> getMyPost(HttpServletRequest request) {
-    String accessToken = getToken(request);
+    String accessToken = jwtTokenProvider.resolveToken(request);
     List<PostListDto> response = postService.getMyPost(accessToken);
     return ResponseEntity.ok(response);
   }
 
   @PostMapping("/lists/{postId}/like")
   public void postLike(HttpServletRequest request, @PathVariable(name = "postId") Long postId) {
-    String accessToken = getToken(request);
+    String accessToken = jwtTokenProvider.resolveToken(request);
     postService.like(accessToken, postId);
   }
 
@@ -89,7 +91,7 @@ public class PostController {
   public ResponseEntity<List<PostListDto>> search(HttpServletRequest request,
       @Valid @NotNull(message = "검색어가 없으면 안됩니다.") @RequestParam(name = "keyword") String keyword,
       @RequestParam(name = "searchOption") SearchOption searchOption) {
-    String accessToken = getToken(request);
+    String accessToken = jwtTokenProvider.resolveToken(request);
     List<PostListDto> response = postService.search(accessToken, keyword, searchOption);
     log.info("post searchKeyword: {}, post searchOption: {}", keyword, searchOption);
     return ResponseEntity.ok(response);
@@ -99,7 +101,7 @@ public class PostController {
   public ResponseEntity<String> commentCreate(HttpServletRequest request,
       @PathVariable(name = "postId") Long postId,
       @Valid @RequestBody CommentRequest commentRequest) {
-    String accessToken = getToken(request);
+    String accessToken = jwtTokenProvider.resolveToken(request);
     String response = commentService.create(accessToken, postId, commentRequest);
     return ResponseEntity.ok(response);
   }
@@ -108,7 +110,7 @@ public class PostController {
   public ResponseEntity<String> commentDelete(HttpServletRequest request,
       @PathVariable(name = "postId") Long postId,
       @PathVariable(name = "commentId") Long commentId) {
-    String accessToken = getToken(request);
+    String accessToken = jwtTokenProvider.resolveToken(request);
     String response = commentService.delete(accessToken, postId, commentId);
     return ResponseEntity.ok(response);
   }
@@ -117,7 +119,7 @@ public class PostController {
   public ResponseEntity<String> commentUpdate(HttpServletRequest request,
       @PathVariable(name = "postId") Long postId, @PathVariable(name = "commentId") Long commentId,
       @Valid @RequestBody CommentRequest commentRequest) {
-    String accessToken = getToken(request);
+    String accessToken = jwtTokenProvider.resolveToken(request);
     String response = commentService.update(accessToken, postId, commentId, commentRequest);
     return ResponseEntity.ok(response);
   }
@@ -125,22 +127,14 @@ public class PostController {
   @PostMapping("/lists/{postId}/comments/{commentId}/like")
   public void commentLike(HttpServletRequest request, @PathVariable(name = "postId") Long postId,
       @PathVariable(name = "commentId") Long commentId) {
-    String accessToken = getToken(request);
+    String accessToken = jwtTokenProvider.resolveToken(request);
     commentService.like(accessToken, postId, commentId);
   }
 
   @GetMapping("/my-comment")
   public ResponseEntity<List<MyCommentDto>> getMyComment(HttpServletRequest request) {
-    String accessToken = getToken(request);
+    String accessToken = jwtTokenProvider.resolveToken(request);
     List<MyCommentDto> response = commentService.getMyComment(accessToken);
     return ResponseEntity.ok(response);
-  }
-
-  private static String getToken(HttpServletRequest request) {
-    String token = request.getHeader("Authorization");
-    if (token != null && token.startsWith("Bearer ")) {
-      token = token.substring(7); // "Bearer " 이후의 토큰 값만 추출
-    }
-    return token;
   }
 }
