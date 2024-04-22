@@ -118,3 +118,6 @@
 - JPA
 - Spring Security
 - Redis
+
+# Notion
+https://blossom-radon-00c.notion.site/MyMusicList-1f22f27301cf4ba087fb09efdd1af071?pvs=4
