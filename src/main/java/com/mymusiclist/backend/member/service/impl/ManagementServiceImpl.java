@@ -1,4 +1,4 @@
-package com.mymusiclist.backend.member.service;
+package com.mymusiclist.backend.member.service.impl;
 
 import com.mymusiclist.backend.components.MailComponents;
 import com.mymusiclist.backend.exception.impl.DuplicateEmailException;
@@ -15,13 +15,14 @@ import com.mymusiclist.backend.exception.impl.WaitingMemberException;
 import com.mymusiclist.backend.member.domain.MemberEntity;
 import com.mymusiclist.backend.member.dto.MemberDto;
 import com.mymusiclist.backend.member.dto.MemberInfoDto;
-import com.mymusiclist.backend.member.dto.TokenDto;
+import com.mymusiclist.backend.member.dto.TokenCreateDto;
 import com.mymusiclist.backend.member.dto.request.LoginRequest;
 import com.mymusiclist.backend.member.dto.request.ResetRequest;
 import com.mymusiclist.backend.member.dto.request.SignUpRequest;
 import com.mymusiclist.backend.member.dto.request.UpdateRequest;
 import com.mymusiclist.backend.member.jwt.JwtTokenProvider;
 import com.mymusiclist.backend.member.repository.MemberRepository;
+import com.mymusiclist.backend.member.service.ManagementService;
 import com.mymusiclist.backend.post.domain.CommentEntity;
 import com.mymusiclist.backend.post.domain.PostEntity;
 import com.mymusiclist.backend.post.repository.CommentRepository;
@@ -46,22 +47,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
-public class MemberServiceImpl implements MemberService {
+@Slf4j
+public class ManagementServiceImpl implements ManagementService {
 
   private final MemberRepository memberRepository;
   private final MailComponents mailComponents;
+  private final PostRepository postRepository;
+  private final CommentRepository commentRepository;
   private final JwtTokenProvider jwtTokenProvider;
   private final PasswordEncoder passwordEncoder;
   private final RedisTemplate redisTemplate;
-  private final PostRepository postRepository;
-  private final CommentRepository commentRepository;
-  private final TokenService tokenService;
 
   @Override
-  @Transactional
   public String signUp(SignUpRequest signUpRequest) {
 
     if (!isValidEmail(signUpRequest.getEmail())) {
@@ -120,9 +119,7 @@ public class MemberServiceImpl implements MemberService {
     return "가입한 이메일을 확인해 회원인증을 진행해주세요.";
   }
 
-
   @Override
-  @Transactional
   public String auth(String email, String code) {
 
     MemberEntity member = memberRepository.findByEmail(email)
@@ -143,7 +140,7 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  public TokenDto login(LoginRequest loginRequest) {
+  public TokenCreateDto login(LoginRequest loginRequest) {
 
     MemberEntity member = memberRepository.findByEmail(loginRequest.getEmail())
         .orElseThrow(() -> new NotFoundMemberException());
@@ -156,14 +153,15 @@ public class MemberServiceImpl implements MemberService {
 
     // 패스워드 검증
     if (passwordEncoder.matches(loginRequest.getPassword(), member.getPassword())) {
-      // AccessToken 및 RefreshToken 생성
-      TokenDto token = tokenService.create(member.getEmail(), member.getAdminYn());
-      log.info("token create: {}", loginRequest.getEmail());
-      return token;
-    } else {
-      log.warn("login InvalidPasswordException: {}", loginRequest.getEmail());
       throw new InvalidPasswordException();
     }
+
+    TokenCreateDto result = TokenCreateDto.builder()
+        .email(member.getEmail())
+        .adminYn(member.getAdminYn())
+        .build();
+
+    return result;
   }
 
   @Override
@@ -194,7 +192,6 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  @Transactional
   public String resetPassword(ResetRequest resetRequest) {
 
     MemberEntity member = memberRepository.findByEmail(resetRequest.getEmail())
@@ -222,7 +219,6 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  @Transactional
   public String passwordAuth(String email, String code, String resetPassword) {
 
     MemberEntity member = memberRepository.findByEmail(email)
@@ -251,7 +247,6 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  @Transactional
   public MemberDto update(String accessToken, UpdateRequest updateRequest) {
 
     if (!jwtTokenProvider.validateToken(accessToken)) {
@@ -291,7 +286,6 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  @Transactional
   public String withdrawal(String accessToken) {
 
     if (!jwtTokenProvider.validateToken(accessToken)) {

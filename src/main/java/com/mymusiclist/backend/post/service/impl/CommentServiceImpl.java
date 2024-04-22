@@ -1,4 +1,4 @@
-package com.mymusiclist.backend.post.service;
+package com.mymusiclist.backend.post.service.impl;
 
 import com.mymusiclist.backend.exception.impl.DeleteCommentException;
 import com.mymusiclist.backend.exception.impl.DeletePostException;
@@ -18,6 +18,7 @@ import com.mymusiclist.backend.post.dto.request.CommentRequest;
 import com.mymusiclist.backend.post.repository.CommentLikeRepository;
 import com.mymusiclist.backend.post.repository.CommentRepository;
 import com.mymusiclist.backend.post.repository.PostRepository;
+import com.mymusiclist.backend.post.service.CommentService;
 import com.mymusiclist.backend.type.CommentStatus;
 import com.mymusiclist.backend.type.PostStatus;
 import java.time.LocalDateTime;

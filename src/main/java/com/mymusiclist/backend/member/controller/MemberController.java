@@ -7,6 +7,7 @@ import com.mymusiclist.backend.member.dto.request.LoginRequest;
 import com.mymusiclist.backend.member.dto.request.ResetRequest;
 import com.mymusiclist.backend.member.dto.request.SignUpRequest;
 import com.mymusiclist.backend.member.dto.request.UpdateRequest;
+import com.mymusiclist.backend.member.jwt.JwtTokenProvider;
 import com.mymusiclist.backend.member.service.MemberService;
 import com.mymusiclist.backend.member.service.TokenService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,6 +33,7 @@ public class MemberController {
 
   private final MemberService memberService;
   private final TokenService tokenService;
+  private final JwtTokenProvider jwtTokenProvider;
 
   @PostMapping("/signup")
   public ResponseEntity<String> singUp(@Valid @RequestBody SignUpRequest signUpRequest) {
@@ -56,7 +58,7 @@ public class MemberController {
 
   @DeleteMapping("/logout")
   public ResponseEntity<String> logout(HttpServletRequest request) {
-    String accessToken = getToken(request);
+    String accessToken = jwtTokenProvider.resolveToken(request);
     String email = memberService.logout(accessToken);
     log.info("logout user: {}", email);
     return ResponseEntity.ok("로그아웃 완료");
@@ -64,7 +66,7 @@ public class MemberController {
 
   @PostMapping("/reissue")
   public ResponseEntity<TokenDto> reIssue(HttpServletRequest request) {
-    String refreshToken = getToken(request);
+    String refreshToken = jwtTokenProvider.resolveToken(request);
     TokenDto response = tokenService.reIssue(refreshToken);
     return ResponseEntity.ok(response);
   }
@@ -86,7 +88,7 @@ public class MemberController {
 
   @DeleteMapping("/withdrawal")
   public ResponseEntity<String> withdrawal(HttpServletRequest request) {
-    String accessToken = getToken(request);
+    String accessToken = jwtTokenProvider.resolveToken(request);
     String email = memberService.withdrawal(accessToken);
     log.info("withdrawal user: {}", email);
     return ResponseEntity.ok("회원탈퇴가 정상적으로 완료되었습니다.");
@@ -95,7 +97,7 @@ public class MemberController {
   @PutMapping("/my-info")
   public ResponseEntity<MemberDto> update(HttpServletRequest request,
       @Valid @RequestBody UpdateRequest updateRequest) {
-    String accessToken = getToken(request);
+    String accessToken = jwtTokenProvider.resolveToken(request);
     MemberDto response = memberService.update(accessToken,updateRequest);
     log.info("update user: {}, update content - nickname: {}, imageUrl: {}, introduction: {}",
         response.getEmail(), updateRequest.getNickname(), updateRequest.getImageUrl(),
@@ -105,7 +107,7 @@ public class MemberController {
 
   @GetMapping("/my-info")
   public ResponseEntity<MemberDto> myInfo(HttpServletRequest request) {
-    String accessToken = getToken(request);
+    String accessToken = jwtTokenProvider.resolveToken(request);
     MemberDto response = memberService.myInfo(accessToken);
     return ResponseEntity.ok(response);
   }
@@ -113,16 +115,8 @@ public class MemberController {
   @GetMapping("/info/{nickname}")
   public ResponseEntity<MemberInfoDto> memberInfo(HttpServletRequest request,
       @PathVariable(name = "nickname") String nickname) {
-    String accessToken = getToken(request);
+    String accessToken = jwtTokenProvider.resolveToken(request);
     MemberInfoDto response = memberService.memberInfo(accessToken, nickname);
     return ResponseEntity.ok(response);
-  }
-
-  private static String getToken(HttpServletRequest request) {
-    String token = request.getHeader("Authorization");
-    if (token != null && token.startsWith("Bearer ")) {
-      token = token.substring(7); // "Bearer " 이후의 토큰 값만 추출
-    }
-    return token;
   }
 }

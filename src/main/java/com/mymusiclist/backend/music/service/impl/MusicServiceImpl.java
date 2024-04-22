@@ -1,4 +1,4 @@
-package com.mymusiclist.backend.music.service;
+package com.mymusiclist.backend.music.service.impl;
 
 import com.google.api.services.youtube.model.SearchResult;
 import com.mymusiclist.backend.exception.impl.DuplicateListException;
@@ -21,6 +21,7 @@ import com.mymusiclist.backend.music.dto.request.DeleteRequest;
 import com.mymusiclist.backend.music.dto.request.UpdateRequest;
 import com.mymusiclist.backend.music.repository.MusicRepository;
 import com.mymusiclist.backend.music.repository.MyMusicListRepository;
+import com.mymusiclist.backend.music.service.MusicService;
 import com.mymusiclist.backend.music.youtube.YoutubeClient;
 import java.io.IOException;
 import java.time.LocalDateTime;
